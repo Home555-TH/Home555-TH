@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC ePR AI Cloud System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        button:hover { background: #5568d3; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #764ba2;
+        }
+        .btn-secondary:hover {
+            background: #663a8d;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .data-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-running { background: #d4edda; color: #155724; }
+        .status-idle { background: #fff3cd; color: #856404; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-completed { background: #d1ecf1; color: #0c5460; }
+        .sync-status {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .ai-analysis {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 CNC ePR AI Cloud System</h1>
+            <p>AI-Powered Production Management with Google Sheets Integration</p>
+        </div>
+
+        <div class="sync-status" id="syncStatus">
+            <h3>Sync Status</h3>
+            <p id="syncInfo">Loading...</p>
+            <button onclick="syncAll()" style="margin-top: 10px;">Sync All to Google Sheets</button>
+        </div>
+
+        <div class="dashboard">
+            <!-- CNC Data Entry -->
+            <div class="card">
+                <h2>📊 CNC Machine Data</h2>
+                <form id="cncForm" onsubmit="submitCNCData(event)">
+                    <div class="form-group">
+                        <label>Machine ID</label>
+                        <input type="text" name="machine_id" required placeholder="CNC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Machine Name</label>
+                        <input type="text" name="machine_name" required placeholder="Haas VF-2">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="running">Running</option>
+                            <option value="idle">Idle</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="error">Error</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Operation Type</label>
+                        <input type="text" name="operation_type" required placeholder="Milling">
+                    </div>
+                    <div class="form-group">
+                        <label>Speed (RPM)</label>
+                        <input type="number" name="speed_rpm" required placeholder="3000">
+                    </div>
+                    <div class="form-group">
+                        <label>Feed Rate</label>
+                        <input type="number" name="feed_rate" required step="0.1" placeholder="100.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Temperature (°C)</label>
+                        <input type="number" name="temperature" required step="0.1" placeholder="45.2">
+                    </div>
+                    <div class="form-group">
+                        <label>Coordinates (X, Y, Z)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                            <input type="number" name="coordinates_x" required step="0.01" placeholder="X">
+                            <input type="number" name="coordinates_y" required step="0.01" placeholder="Y">
+                            <input type="number" name="coordinates_z" required step="0.01" placeholder="Z">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Program Name</label>
+                        <input type="text" name="program_name" required placeholder="PART_001.nc">
+                    </div>
+                    <button type="submit">Record CNC Data</button>
+                </form>
+            </div>
+
+            <!-- EPR Entry -->
+            <div class="card">
+                <h2>📝 Electronic Production Record</h2>
+                <form id="eprForm" onsubmit="submitEPR(event)">
+                    <div class="form-group">
+                        <label>Production Order</label>
+                        <input type="text" name="production_order" required placeholder="PO-2024-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Part Number</label>
+                        <input type="text" name="part_number" required placeholder="PN-12345">
+                    </div>
+                    <div class="form-group">
+                        <label>Part Name</label>
+                        <input type="text" name="part_name" required placeholder="Engine Block">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" name="quantity" required placeholder="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Machine ID</label>
+                        <input type="text" name="machine_id" required placeholder="CNC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Operator Name</label>
+                        <input type="text" name="operator_name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="3" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <button type="submit">Start Production</button>
+                </form>
+            </div>
+
+            <!-- AI Analysis -->
+            <div class="card">
+                <h2>🤖 AI Analysis</h2>
+                <button onclick="analyzeCNC()" style="width: 100%; margin-bottom: 10px;">Analyze CNC Data</button>
+                <button onclick="detectAnomalies()" class="btn-secondary" style="width: 100%; margin-bottom: 10px;">Detect Anomalies</button>
+                <div id="aiResults" class="ai-analysis" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Recent Data -->
+        <div class="card">
+            <h2>Recent CNC Data</h2>
+            <button onclick="loadCNCData()">Refresh</button>
+            <div id="cncData" class="data-display"></div>
+        </div>
+
+        <div class="card">
+            <h2>Recent EPR Records</h2>
+            <button onclick="loadEPRData()">Refresh</button>
+            <div id="eprData" class="data-display"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        async function submitCNCData(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`${API_URL}/api/cnc`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message || 'Data recorded successfully!');
+                e.target.reset();
+                loadCNCData();
+                updateSyncStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function submitEPR(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`${API_URL}/api/epr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message || 'EPR created successfully!');
+                e.target.reset();
+                loadEPRData();
+                updateSyncStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function loadCNCData() {
+            try {
+                const response = await fetch(`${API_URL}/api/cnc?limit=10`);
+                const result = await response.json();
+                const container = document.getElementById('cncData');
+
+                if (result.data.length === 0) {
+                    container.innerHTML = '<p>No data available</p>';
+                    return;
+                }
+
+                container.innerHTML = result.data.map(item => `
+                    <div class="data-item">
+                        <strong>${item.machine_name}</strong> (${item.machine_id})
+                        <span class="status-badge status-${item.status}">${item.status}</span><br>
+                        <small>Speed: ${item.speed_rpm} RPM | Temp: ${item.temperature}°C | ${new Date(item.timestamp).toLocaleString()}</small>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading CNC data:', error);
+            }
+        }
+
+        async function loadEPRData() {
+            try {
+                const response = await fetch(`${API_URL}/api/epr?limit=10`);
+                const result = await response.json();
+                const container = document.getElementById('eprData');
+
+                if (result.data.length === 0) {
+                    container.innerHTML = '<p>No records available</p>';
+                    return;
+                }
+
+                container.innerHTML = result.data.map(item => `
+                    <div class="data-item">
+                        <strong>${item.part_name}</strong> (${item.part_number})<br>
+                        Order: ${item.production_order} | Operator: ${item.operator_name}<br>
+                        <span class="status-badge status-${item.status}">${item.status}</span>
+                        Qty: ${item.quantity} | Defects: ${item.defect_count}<br>
+                        <small>${new Date(item.start_time).toLocaleString()}</small>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading EPR data:', error);
+            }
+        }
+
+        async function analyzeCNC() {
+            try {
+                const response = await fetch(`${API_URL}/api/cnc/analyze?limit=50`);
+                const result = await response.json();
+                const container = document.getElementById('aiResults');
+                container.style.display = 'block';
+                container.innerHTML = `<h3>AI Analysis</h3><p>${result.analysis}</p>`;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function detectAnomalies() {
+            try {
+                const response = await fetch(`${API_URL}/api/cnc/anomalies?limit=100`);
+                const result = await response.json();
+                const container = document.getElementById('aiResults');
+                container.style.display = 'block';
+
+                let html = '<h3>Anomaly Detection</h3>';
+                if (result.hasAnomalies) {
+                    html += '<p><strong>Anomalies Detected:</strong></p><ul>';
+                    result.anomalies.forEach(a => html += `<li>${a}</li>`);
+                    html += '</ul><p><strong>Recommendations:</strong></p><ul>';
+                    result.recommendations.forEach(r => html += `<li>${r}</li>`);
+                    html += '</ul>';
+                } else {
+                    html += '<p>No anomalies detected. System operating normally.</p>';
+                }
+                container.innerHTML = html;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function syncAll() {
+            try {
+                const response = await fetch(`${API_URL}/api/sync/all`, { method: 'POST' });
+                const result = await response.json();
+                alert(`Synced ${result.total} records to Google Sheets!`);
+                updateSyncStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function updateSyncStatus() {
+            try {
+                const response = await fetch(`${API_URL}/api/sync/status`);
+                const result = await response.json();
+                document.getElementById('syncInfo').innerHTML = `
+                    Pending Sync: ${result.status.totalPending} records
+                    (${result.status.cncPending} CNC, ${result.status.eprPending} EPR)
+                `;
+            } catch (error) {
+                document.getElementById('syncInfo').innerHTML = 'Unable to fetch sync status';
+            }
+        }
+
+        // Load data on page load
+        window.onload = () => {
+            loadCNCData();
+            loadEPRData();
+            updateSyncStatus();
+        };
+    </script>
+</body>
+</html>
