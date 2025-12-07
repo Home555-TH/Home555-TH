@@ -2,19 +2,29 @@ import OpenAI from 'openai';
 import { CNCMachineData, EPRRecord } from '../database/schema';
 
 export class AIAnalyzer {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
+  private isConfigured: boolean = false;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn('OpenAI API key not configured. AI features will be disabled.');
+      console.warn('⚠️  OpenAI API key not configured. AI features will be disabled.');
+      console.warn('   Set OPENAI_API_KEY in .env to enable AI analysis.');
+      this.isConfigured = false;
+    } else {
+      try {
+        this.openai = new OpenAI({ apiKey });
+        this.isConfigured = true;
+      } catch (error) {
+        console.error('❌ Failed to initialize OpenAI:', error);
+        this.isConfigured = false;
+      }
     }
-    this.openai = new OpenAI({ apiKey });
   }
 
   async analyzeCNCData(data: CNCMachineData[]): Promise<string> {
-    if (!process.env.OPENAI_API_KEY) {
-      return 'AI analysis unavailable: API key not configured';
+    if (!this.isConfigured || !this.openai) {
+      return 'AI analysis unavailable: OpenAI API key not configured. Set OPENAI_API_KEY in .env file.';
     }
 
     try {
@@ -48,8 +58,8 @@ export class AIAnalyzer {
   }
 
   async analyzeEPRRecord(record: EPRRecord, relatedCNCData?: CNCMachineData[]): Promise<string> {
-    if (!process.env.OPENAI_API_KEY) {
-      return 'AI analysis unavailable: API key not configured';
+    if (!this.isConfigured || !this.openai) {
+      return 'AI analysis unavailable: OpenAI API key not configured. Set OPENAI_API_KEY in .env file.';
     }
 
     try {
@@ -99,11 +109,11 @@ ${relatedCNCData ? `Related CNC Data:\n${this.summarizeCNCData(relatedCNCData)}`
     anomalies: string[];
     recommendations: string[];
   }> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!this.isConfigured || !this.openai) {
       return {
         hasAnomalies: false,
         anomalies: [],
-        recommendations: ['AI anomaly detection unavailable: API key not configured']
+        recommendations: ['AI anomaly detection unavailable: OpenAI API key not configured. Set OPENAI_API_KEY in .env file.']
       };
     }
 
@@ -155,12 +165,12 @@ Analyze the data and respond in JSON format with:
     estimatedDays: number;
     reasoning: string;
   }> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!this.isConfigured || !this.openai) {
       return {
         maintenanceNeeded: false,
         confidence: 0,
         estimatedDays: 0,
-        reasoning: 'AI prediction unavailable: API key not configured'
+        reasoning: 'AI prediction unavailable: OpenAI API key not configured. Set OPENAI_API_KEY in .env file.'
       };
     }
 

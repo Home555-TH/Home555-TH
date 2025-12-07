@@ -3,9 +3,10 @@ import { readFileSync } from 'fs';
 import { CNCMachineData, EPRRecord } from '../database/schema';
 
 export class GoogleSheetsService {
-  private sheets;
+  private sheets: any;
   private spreadsheetId: string;
-  private auth;
+  private auth: any;
+  private isConfigured: boolean = false;
 
   constructor() {
     this.spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID || '';
@@ -14,7 +15,15 @@ export class GoogleSheetsService {
 
   private initializeAuth() {
     try {
-      const credentialsPath = process.env.GOOGLE_SHEETS_CREDENTIALS_PATH || './credentials/google-credentials.json';
+      const credentialsPath = process.env.GOOGLE_SHEETS_CREDENTIALS_PATH;
+
+      if (!credentialsPath || !this.spreadsheetId) {
+        console.warn('⚠️  Google Sheets not configured. Set GOOGLE_SHEETS_CREDENTIALS_PATH and GOOGLE_SPREADSHEET_ID to enable sync.');
+        console.warn('   The application will work normally without Google Sheets integration.');
+        this.isConfigured = false;
+        return;
+      }
+
       const credentials = JSON.parse(readFileSync(credentialsPath, 'utf-8'));
 
       this.auth = new google.auth.GoogleAuth({
@@ -23,13 +32,19 @@ export class GoogleSheetsService {
       });
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+      this.isConfigured = true;
     } catch (error) {
-      console.error('Failed to initialize Google Sheets authentication:', error);
-      throw error;
+      console.error('❌ Failed to initialize Google Sheets authentication:', error);
+      console.warn('   The application will continue without Google Sheets integration.');
+      this.isConfigured = false;
     }
   }
 
   async initializeSpreadsheet() {
+    if (!this.isConfigured) {
+      return;
+    }
+
     try {
       // Create or verify CNC Data sheet
       await this.createSheetIfNotExists('CNC_Data', [
@@ -45,7 +60,7 @@ export class GoogleSheetsService {
         'Quality Score', 'Defect Count', 'Notes', 'AI Analysis', 'Date/Time'
       ]);
 
-      console.log('Google Sheets initialized successfully');
+      console.log('✓ Google Sheets initialized successfully');
     } catch (error) {
       console.error('Failed to initialize spreadsheet:', error);
       throw error;
@@ -91,6 +106,10 @@ export class GoogleSheetsService {
   }
 
   async syncCNCData(data: CNCMachineData[]): Promise<string[]> {
+    if (!this.isConfigured) {
+      throw new Error('Google Sheets is not configured. Please set GOOGLE_SHEETS_CREDENTIALS_PATH and GOOGLE_SPREADSHEET_ID.');
+    }
+
     if (data.length === 0) return [];
 
     try {
@@ -127,6 +146,10 @@ export class GoogleSheetsService {
   }
 
   async syncEPRRecords(records: EPRRecord[]): Promise<string[]> {
+    if (!this.isConfigured) {
+      throw new Error('Google Sheets is not configured. Please set GOOGLE_SHEETS_CREDENTIALS_PATH and GOOGLE_SPREADSHEET_ID.');
+    }
+
     if (records.length === 0) return [];
 
     try {
@@ -164,6 +187,10 @@ export class GoogleSheetsService {
   }
 
   async getAllCNCData(): Promise<any[]> {
+    if (!this.isConfigured) {
+      return [];
+    }
+
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
@@ -177,6 +204,10 @@ export class GoogleSheetsService {
   }
 
   async getAllEPRRecords(): Promise<any[]> {
+    if (!this.isConfigured) {
+      return [];
+    }
+
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
