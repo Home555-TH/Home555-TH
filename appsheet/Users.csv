@@ -1,0 +1,13 @@
+User_ID,Full_Name,Email,Phone,Role,Department,Can_Assess,Can_Approve,Can_Produce,Is_Active,Created_Date,Last_Login
+USR001,วิชัย ผู้จัดการ,wichai@woodfactory.co.th,081-111-1111,ผู้จัดการ,บริหาร,TRUE,TRUE,TRUE,TRUE,2023-01-01,2024-12-26
+USR002,สมศักดิ์ ผอ.,somsak@woodfactory.co.th,081-222-2222,ผู้อำนวยการ,บริหาร,FALSE,TRUE,FALSE,TRUE,2023-01-01,2024-12-25
+USR003,สมชาย ใจดี,somchai@woodfactory.co.th,082-333-3333,ผู้ประเมิน,ควบคุมคุณภาพ,TRUE,FALSE,FALSE,TRUE,2023-02-15,2024-12-26
+USR004,สมหญิง รักงาน,somying@woodfactory.co.th,082-444-4444,ผู้ประเมิน,ควบคุมคุณภาพ,TRUE,FALSE,FALSE,TRUE,2023-03-01,2024-12-26
+USR005,วิภา ประเมินเก่ง,wipa@woodfactory.co.th,082-555-5555,ผู้ประเมินอาวุโส,ควบคุมคุณภาพ,TRUE,TRUE,FALSE,TRUE,2023-01-15,2024-12-26
+USR006,อนุชา ช่างไม้,anucha@woodfactory.co.th,083-666-6666,หัวหน้าช่าง,ผลิต,FALSE,FALSE,TRUE,TRUE,2023-02-01,2024-12-26
+USR007,สมศักดิ์ ช่างเก่า,somsak.c@woodfactory.co.th,083-777-7777,ช่างไม้,ผลิต,FALSE,FALSE,TRUE,TRUE,2023-04-01,2024-12-26
+USR008,วินัย ช่างเลื่อย,winai@woodfactory.co.th,083-888-8888,ช่างเลื่อย,ผลิต,FALSE,FALSE,TRUE,TRUE,2023-05-01,2024-12-25
+USR009,มานะ ช่างตกแต่ง,mana@woodfactory.co.th,083-999-9999,ช่างตกแต่ง,ผลิต,FALSE,FALSE,TRUE,TRUE,2023-06-01,2024-12-26
+USR010,ศรีนวล ช่างประกอบ,srinuan@woodfactory.co.th,084-000-0000,ช่างประกอบ,ผลิต,FALSE,FALSE,TRUE,TRUE,2023-07-01,2024-12-26
+USR011,จิตรา คลังสินค้า,jittra@woodfactory.co.th,084-111-1111,เจ้าหน้าที่คลัง,คลังสินค้า,FALSE,FALSE,FALSE,TRUE,2023-03-15,2024-12-26
+USR012,ประยุทธ์ จัดซื้อ,prayut@woodfactory.co.th,084-222-2222,เจ้าหน้าที่จัดซื้อ,จัดซื้อ,FALSE,FALSE,FALSE,TRUE,2023-04-15,2024-12-25
