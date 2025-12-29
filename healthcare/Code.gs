@@ -330,7 +330,12 @@ function getSheetData(sheetName, limit, reverseOrder = true) {
   return rows.map(item => {
     const obj = { _rowIndex: item.originalIndex };
     headers.forEach((header, i) => {
-      obj[header] = item.row[i];
+      let value = item.row[i];
+      // แปลง Date object เป็น string
+      if (value instanceof Date) {
+        value = formatThaiDate(value);
+      }
+      obj[header] = value;
     });
     return obj;
   });
@@ -418,6 +423,21 @@ function formatThaiDate(date) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear() + 543;
   return `${day}/${month}/${year}`;
+}
+
+// แปลงค่าวันที่ให้เป็น string เสมอ
+function toDateString(dateValue) {
+  if (!dateValue) return '';
+  if (dateValue instanceof Date) {
+    return formatThaiDate(dateValue);
+  }
+  if (typeof dateValue === 'string') {
+    return dateValue;
+  }
+  if (typeof dateValue === 'number') {
+    return formatThaiDate(new Date(dateValue));
+  }
+  return String(dateValue);
 }
 
 function parseThaiDate(dateStr) {
