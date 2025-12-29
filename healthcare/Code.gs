@@ -12,7 +12,7 @@
 
 // ==================== CONFIGURATION ====================
 const CONFIG = {
-  SURGERY_DATE: new Date('2025-02-28'),
+  SURGERY_DATE: new Date(2025, 1, 28), // 28 Feb 2025 (month is 0-indexed)
   PATIENT_NAME: 'คุณแม่',
   SHEETS: {
     HEALTH: 'ข้อมูลสุขภาพ',
@@ -344,8 +344,12 @@ function getSheetData(sheetName, limit, reverseOrder = true) {
 // ==================== DASHBOARD DATA ====================
 function getDashboardData() {
   const today = new Date();
-  const surgeryDate = CONFIG.SURGERY_DATE;
-  const daysUntilSurgery = Math.ceil((surgeryDate - today) / (1000 * 60 * 60 * 24));
+  today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate day calculation
+
+  const surgeryDate = new Date(2025, 1, 28); // 28 Feb 2025
+  surgeryDate.setHours(0, 0, 0, 0);
+
+  const daysUntilSurgery = Math.round((surgeryDate - today) / (1000 * 60 * 60 * 24));
 
   // Get latest health data
   const healthData = getHealthData(1);
