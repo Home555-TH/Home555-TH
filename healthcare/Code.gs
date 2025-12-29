@@ -422,9 +422,26 @@ function formatThaiDate(date) {
 
 function parseThaiDate(dateStr) {
   if (!dateStr) return new Date();
-  const parts = dateStr.split('/');
-  if (parts.length !== 3) return new Date();
-  return new Date(parseInt(parts[2]) - 543, parseInt(parts[1]) - 1, parseInt(parts[0]));
+
+  // ถ้าเป็น Date object อยู่แล้ว
+  if (dateStr instanceof Date) {
+    return dateStr;
+  }
+
+  // ถ้าเป็น string
+  if (typeof dateStr === 'string') {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[2]) - 543, parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+  }
+
+  // ถ้าเป็นตัวเลข (timestamp)
+  if (typeof dateStr === 'number') {
+    return new Date(dateStr);
+  }
+
+  return new Date();
 }
 
 function getCurrentDateTime() {
