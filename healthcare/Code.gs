@@ -193,6 +193,7 @@ function saveHealthData(data) {
     data.date, data.time, data.systolic, data.diastolic, data.pulse,
     data.weight, data.temperature, data.oxygen, data.symptoms, data.notes
   ]);
+  SpreadsheetApp.flush(); // บันทึกทันที
   return { success: true, message: 'บันทึกข้อมูลสุขภาพเรียบร้อย' };
 }
 
@@ -203,6 +204,7 @@ function saveExercise(data) {
   sheet.appendRow([
     data.date, data.time, data.type, data.duration, data.intensity, data.feeling, data.notes
   ]);
+  SpreadsheetApp.flush();
   return { success: true, message: 'บันทึกการออกกำลังกายเรียบร้อย' };
 }
 
@@ -214,6 +216,7 @@ function saveAppointment(data) {
     data.date, data.time, data.doctor, data.department, data.hospital,
     data.procedure, data.status || 'รอดำเนินการ', data.notes
   ]);
+  SpreadsheetApp.flush();
   return { success: true, message: 'บันทึกนัดหมายเรียบร้อย' };
 }
 
@@ -224,6 +227,7 @@ function saveMeal(data) {
   sheet.appendRow([
     data.date, data.mealType, data.menu, data.ingredients, data.calories, data.protein, data.notes
   ]);
+  SpreadsheetApp.flush();
   return { success: true, message: 'บันทึกอาหารเรียบร้อย' };
 }
 
@@ -281,9 +285,9 @@ function getMeals(limit) {
   return getSheetData(CONFIG.SHEETS.MEALS, limit || 30);
 }
 
-// ดึงเมนูแนะนำ
+// ดึงเมนูแนะนำ (ไม่ต้อง reverse - เป็น static data)
 function getMealPlans() {
-  return getSheetData(CONFIG.SHEETS.MEAL_PLANS, 100);
+  return getSheetData(CONFIG.SHEETS.MEAL_PLANS, 100, false);
 }
 
 // ดึงรายการซื้อของ
@@ -296,12 +300,12 @@ function getFridgeItems() {
   return getSheetData(CONFIG.SHEETS.FRIDGE, 100);
 }
 
-// ดึงเครื่องปรุง
+// ดึงเครื่องปรุง (ไม่ต้อง reverse - เป็น static data)
 function getCondiments() {
-  return getSheetData(CONFIG.SHEETS.CONDIMENTS, 50);
+  return getSheetData(CONFIG.SHEETS.CONDIMENTS, 50, false);
 }
 
-function getSheetData(sheetName, limit) {
+function getSheetData(sheetName, limit, reverseOrder = true) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
@@ -310,12 +314,23 @@ function getSheetData(sheetName, limit) {
   if (data.length <= 1) return [];
 
   const headers = data[0];
-  const rows = data.slice(1, limit + 1);
+  let rows = data.slice(1);
 
-  return rows.map((row, index) => {
-    const obj = { _rowIndex: index };
+  // เก็บ original index ก่อน reverse
+  rows = rows.map((row, index) => ({ row, originalIndex: index }));
+
+  // เรียงจากใหม่ไปเก่า (ข้อมูลล่าสุดอยู่บนสุด)
+  if (reverseOrder) {
+    rows = rows.reverse();
+  }
+
+  // จำกัดจำนวน
+  rows = rows.slice(0, limit);
+
+  return rows.map(item => {
+    const obj = { _rowIndex: item.originalIndex };
     headers.forEach((header, i) => {
-      obj[header] = row[i];
+      obj[header] = item.row[i];
     });
     return obj;
   });
