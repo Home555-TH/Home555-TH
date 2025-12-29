@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-heartbeat"></i> Healthcare Tracking</h1>
+      <div class="patient-info">
+        <span id="patientName">ดูแลคุณแม่</span>
+        <span class="surgery-countdown" id="surgeryCountdown"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="dashboard"><i class="fas fa-home"></i> หน้าหลัก</button>
+    <button class="nav-tab" data-tab="health"><i class="fas fa-stethoscope"></i> สุขภาพ</button>
+    <button class="nav-tab" data-tab="exercise"><i class="fas fa-running"></i> ออกกำลังกาย</button>
+    <button class="nav-tab" data-tab="appointments"><i class="fas fa-calendar-alt"></i> นัดหมาย</button>
+    <button class="nav-tab" data-tab="meals"><i class="fas fa-utensils"></i> อาหาร</button>
+    <button class="nav-tab" data-tab="grocery"><i class="fas fa-shopping-cart"></i> ซื้อของ</button>
+    <button class="nav-tab" data-tab="fridge"><i class="fas fa-snowflake"></i> ตู้เย็น</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Dashboard Tab -->
+    <section id="dashboard" class="tab-content active">
+      <div class="dashboard-grid">
+        <!-- Surgery Countdown Card -->
+        <div class="card card-highlight">
+          <div class="card-header">
+            <i class="fas fa-hospital"></i> วันผ่าตัด
+          </div>
+          <div class="card-body">
+            <div class="surgery-date">28 กุมภาพันธ์ 2568</div>
+            <div class="countdown-display" id="countdownDays">-- วัน</div>
+            <div class="phase-indicator" id="phaseIndicator">ช่วงเตรียมตัว</div>
+          </div>
+        </div>
+
+        <!-- Latest Health Card -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-heartbeat"></i> สุขภาพล่าสุด
+          </div>
+          <div class="card-body" id="latestHealthCard">
+            <p class="no-data">ยังไม่มีข้อมูล</p>
+          </div>
+        </div>
+
+        <!-- Upcoming Appointments Card -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-calendar-check"></i> นัดหมายที่ใกล้ถึง
+          </div>
+          <div class="card-body" id="upcomingAppointmentsCard">
+            <p class="no-data">ไม่มีนัดหมาย</p>
+          </div>
+        </div>
+
+        <!-- Today's Meals Card -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-utensils"></i> อาหารวันนี้
+          </div>
+          <div class="card-body" id="todayMealsCard">
+            <p class="no-data">ยังไม่ได้บันทึก</p>
+          </div>
+        </div>
+
+        <!-- Grocery To Buy Card -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-shopping-basket"></i> รายการต้องซื้อ
+          </div>
+          <div class="card-body" id="groceryToBuyCard">
+            <div class="big-number">0</div>
+            <div>รายการ</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-bolt"></i> บันทึกด่วน
+          </div>
+          <div class="card-body">
+            <div class="quick-actions">
+              <button class="btn btn-primary" onclick="showQuickHealth()">
+                <i class="fas fa-plus"></i> บันทึกสุขภาพ
+              </button>
+              <button class="btn btn-success" onclick="showQuickMeal()">
+                <i class="fas fa-plus"></i> บันทึกอาหาร
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Health Tab -->
+    <section id="health" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-stethoscope"></i> บันทึกข้อมูลสุขภาพ</h2>
+        <button class="btn btn-primary" onclick="toggleForm('healthForm')">
+          <i class="fas fa-plus"></i> เพิ่มข้อมูล
+        </button>
+      </div>
+
+      <div id="healthForm" class="form-container hidden">
+        <form onsubmit="submitHealthData(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="text" id="health_date" required>
+            </div>
+            <div class="form-group">
+              <label>เวลา</label>
+              <input type="time" id="health_time" required>
+            </div>
+            <div class="form-group">
+              <label>ความดันบน (Systolic)</label>
+              <input type="number" id="health_systolic" placeholder="120">
+            </div>
+            <div class="form-group">
+              <label>ความดันล่าง (Diastolic)</label>
+              <input type="number" id="health_diastolic" placeholder="80">
+            </div>
+            <div class="form-group">
+              <label>ชีพจร (ครั้ง/นาที)</label>
+              <input type="number" id="health_pulse" placeholder="72">
+            </div>
+            <div class="form-group">
+              <label>น้ำหนัก (กก.)</label>
+              <input type="number" step="0.1" id="health_weight" placeholder="55.5">
+            </div>
+            <div class="form-group">
+              <label>อุณหภูมิ (°C)</label>
+              <input type="number" step="0.1" id="health_temp" placeholder="36.5">
+            </div>
+            <div class="form-group">
+              <label>ออกซิเจน (%)</label>
+              <input type="number" id="health_oxygen" placeholder="98">
+            </div>
+            <div class="form-group full-width">
+              <label>อาการ</label>
+              <textarea id="health_symptoms" rows="2" placeholder="อาการวันนี้..."></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label>หมายเหตุ</label>
+              <textarea id="health_notes" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('healthForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table" id="healthTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>เวลา</th>
+              <th>ความดัน</th>
+              <th>ชีพจร</th>
+              <th>น้ำหนัก</th>
+              <th>อุณหภูมิ</th>
+              <th>O2</th>
+              <th>อาการ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Exercise Tab -->
+    <section id="exercise" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-running"></i> บันทึกการออกกำลังกาย</h2>
+        <button class="btn btn-primary" onclick="toggleForm('exerciseForm')">
+          <i class="fas fa-plus"></i> เพิ่มข้อมูล
+        </button>
+      </div>
+
+      <div id="exerciseForm" class="form-container hidden">
+        <form onsubmit="submitExercise(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="text" id="exercise_date" required>
+            </div>
+            <div class="form-group">
+              <label>เวลา</label>
+              <input type="time" id="exercise_time" required>
+            </div>
+            <div class="form-group">
+              <label>ประเภท</label>
+              <select id="exercise_type" required>
+                <option value="">เลือก...</option>
+                <option value="เดิน">เดิน</option>
+                <option value="เดินช้าๆ">เดินช้าๆ</option>
+                <option value="ยืดเหยียด">ยืดเหยียด</option>
+                <option value="หายใจลึก">หายใจลึก</option>
+                <option value="กายภาพบำบัด">กายภาพบำบัด</option>
+                <option value="โยคะเบาๆ">โยคะเบาๆ</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ระยะเวลา (นาที)</label>
+              <input type="number" id="exercise_duration" placeholder="15">
+            </div>
+            <div class="form-group">
+              <label>ความเข้มข้น</label>
+              <select id="exercise_intensity">
+                <option value="เบามาก">เบามาก</option>
+                <option value="เบา" selected>เบา</option>
+                <option value="ปานกลาง">ปานกลาง</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ความรู้สึก</label>
+              <select id="exercise_feeling">
+                <option value="ดีมาก">ดีมาก</option>
+                <option value="ดี" selected>ดี</option>
+                <option value="ปกติ">ปกติ</option>
+                <option value="เหนื่อย">เหนื่อย</option>
+                <option value="ไม่สบาย">ไม่สบาย</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label>หมายเหตุ</label>
+              <textarea id="exercise_notes" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('exerciseForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table" id="exerciseTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>เวลา</th>
+              <th>ประเภท</th>
+              <th>ระยะเวลา</th>
+              <th>ความเข้มข้น</th>
+              <th>ความรู้สึก</th>
+              <th>หมายเหตุ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Appointments Tab -->
+    <section id="appointments" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-calendar-alt"></i> ตารางนัดหมายและการรักษา</h2>
+        <button class="btn btn-primary" onclick="toggleForm('appointmentForm')">
+          <i class="fas fa-plus"></i> เพิ่มนัดหมาย
+        </button>
+      </div>
+
+      <div id="appointmentForm" class="form-container hidden">
+        <form onsubmit="submitAppointment(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="text" id="apt_date" required placeholder="DD/MM/YYYY">
+            </div>
+            <div class="form-group">
+              <label>เวลา</label>
+              <input type="time" id="apt_time" required>
+            </div>
+            <div class="form-group">
+              <label>แพทย์</label>
+              <input type="text" id="apt_doctor" placeholder="ชื่อแพทย์">
+            </div>
+            <div class="form-group">
+              <label>แผนก</label>
+              <select id="apt_department">
+                <option value="">เลือก...</option>
+                <option value="ศัลยกรรม">ศัลยกรรม</option>
+                <option value="อายุรกรรม">อายุรกรรม</option>
+                <option value="ต่อมไร้ท่อ">ต่อมไร้ท่อ</option>
+                <option value="มะเร็งวิทยา">มะเร็งวิทยา</option>
+                <option value="ปอด">ปอด</option>
+                <option value="ตรวจเลือด">ตรวจเลือด</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>โรงพยาบาล</label>
+              <input type="text" id="apt_hospital" placeholder="ชื่อโรงพยาบาล">
+            </div>
+            <div class="form-group">
+              <label>สถานะ</label>
+              <select id="apt_status">
+                <option value="รอดำเนินการ">รอดำเนินการ</option>
+                <option value="ยืนยันแล้ว">ยืนยันแล้ว</option>
+                <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                <option value="เลื่อน">เลื่อน</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label>หัตถการ/รายละเอียด</label>
+              <textarea id="apt_procedure" rows="2" placeholder="รายละเอียดการนัดหมาย..."></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label>หมายเหตุ</label>
+              <textarea id="apt_notes" rows="2" placeholder="เช่น งดน้ำงดอาหาร..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('appointmentForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table" id="appointmentTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>เวลา</th>
+              <th>แพทย์</th>
+              <th>แผนก</th>
+              <th>โรงพยาบาล</th>
+              <th>รายละเอียด</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Meals Tab -->
+    <section id="meals" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-utensils"></i> บันทึกอาหาร</h2>
+        <div class="header-buttons">
+          <button class="btn btn-secondary" onclick="showMealPlans()">
+            <i class="fas fa-lightbulb"></i> เมนูแนะนำ
+          </button>
+          <button class="btn btn-primary" onclick="toggleForm('mealForm')">
+            <i class="fas fa-plus"></i> เพิ่มอาหาร
+          </button>
+        </div>
+      </div>
+
+      <div id="mealForm" class="form-container hidden">
+        <form onsubmit="submitMeal(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="text" id="meal_date" required>
+            </div>
+            <div class="form-group">
+              <label>มื้อ</label>
+              <select id="meal_type" required>
+                <option value="เช้า">เช้า</option>
+                <option value="กลางวัน">กลางวัน</option>
+                <option value="เย็น">เย็น</option>
+                <option value="ว่าง">ของว่าง</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>เมนู</label>
+              <input type="text" id="meal_menu" required placeholder="ชื่อเมนู">
+            </div>
+            <div class="form-group">
+              <label>แคลอรี่</label>
+              <input type="number" id="meal_calories" placeholder="200">
+            </div>
+            <div class="form-group">
+              <label>โปรตีน (ก.)</label>
+              <input type="number" id="meal_protein" placeholder="15">
+            </div>
+            <div class="form-group full-width">
+              <label>ส่วนประกอบ</label>
+              <textarea id="meal_ingredients" rows="2" placeholder="วัตถุดิบที่ใช้..."></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label>หมายเหตุ</label>
+              <textarea id="meal_notes" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('mealForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Meal Plans Modal -->
+      <div id="mealPlansModal" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3><i class="fas fa-lightbulb"></i> เมนูแนะนำสำหรับผู้ป่วย</h3>
+            <button class="modal-close" onclick="closeMealPlans()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="meal-plan-filters">
+              <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+              <button class="filter-btn" data-filter="ก่อนผ่าตัด">ก่อนผ่าตัด</button>
+              <button class="filter-btn" data-filter="หลังผ่าตัด">หลังผ่าตัด</button>
+              <button class="filter-btn" data-filter="ทุกช่วง">ของว่าง</button>
+            </div>
+            <div id="mealPlansList" class="meal-plans-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table" id="mealTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>มื้อ</th>
+              <th>เมนู</th>
+              <th>ส่วนประกอบ</th>
+              <th>แคลอรี่</th>
+              <th>โปรตีน</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Grocery Tab -->
+    <section id="grocery" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-shopping-cart"></i> รายการซื้อของ</h2>
+        <div class="header-buttons">
+          <button class="btn btn-success" onclick="generateGroceryList()">
+            <i class="fas fa-magic"></i> สร้างรายการ 3 วัน
+          </button>
+          <button class="btn btn-primary" onclick="toggleForm('groceryForm')">
+            <i class="fas fa-plus"></i> เพิ่มรายการ
+          </button>
+        </div>
+      </div>
+
+      <div id="groceryForm" class="form-container hidden">
+        <form onsubmit="submitGroceryItem(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>วันที่ต้องซื้อ</label>
+              <input type="text" id="grocery_date" required>
+            </div>
+            <div class="form-group">
+              <label>รายการ</label>
+              <input type="text" id="grocery_item" required placeholder="ชื่อสินค้า">
+            </div>
+            <div class="form-group">
+              <label>หมวด</label>
+              <select id="grocery_category">
+                <option value="โปรตีน">โปรตีน</option>
+                <option value="ผัก">ผัก</option>
+                <option value="ผลไม้">ผลไม้</option>
+                <option value="นม">นม/โยเกิร์ต</option>
+                <option value="แป้ง">แป้ง/ข้าว</option>
+                <option value="เครื่องปรุง">เครื่องปรุง</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>จำนวน</label>
+              <input type="text" id="grocery_quantity" placeholder="2">
+            </div>
+            <div class="form-group">
+              <label>หน่วย</label>
+              <input type="text" id="grocery_unit" placeholder="กก., ถุง, ขวด">
+            </div>
+            <div class="form-group full-width">
+              <label>หมายเหตุ</label>
+              <input type="text" id="grocery_notes" placeholder="หมายเหตุ">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">เพิ่ม</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('groceryForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="grocery-summary">
+        <div class="summary-item">
+          <span class="label">ต้องซื้อ:</span>
+          <span class="value" id="toBuyCount">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">ซื้อแล้ว:</span>
+          <span class="value" id="boughtCount">0</span>
+        </div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table" id="groceryTable">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>รายการ</th>
+              <th>หมวด</th>
+              <th>จำนวน</th>
+              <th>สถานะ</th>
+              <th>ซื้อเมื่อ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Fridge Tab -->
+    <section id="fridge" class="tab-content">
+      <div class="section-header">
+        <h2><i class="fas fa-snowflake"></i> ของในตู้เย็นและเครื่องปรุง</h2>
+        <button class="btn btn-primary" onclick="toggleForm('fridgeForm')">
+          <i class="fas fa-plus"></i> เพิ่มของ
+        </button>
+      </div>
+
+      <div id="fridgeForm" class="form-container hidden">
+        <form onsubmit="submitFridgeItem(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>รายการ</label>
+              <input type="text" id="fridge_item" required placeholder="ชื่อของ">
+            </div>
+            <div class="form-group">
+              <label>หมวด</label>
+              <select id="fridge_category">
+                <option value="โปรตีน">โปรตีน</option>
+                <option value="ผัก">ผัก</option>
+                <option value="ผลไม้">ผลไม้</option>
+                <option value="นม">นม/โยเกิร์ต</option>
+                <option value="เครื่องปรุง">เครื่องปรุง</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>จำนวน</label>
+              <input type="text" id="fridge_quantity" placeholder="2">
+            </div>
+            <div class="form-group">
+              <label>หน่วย</label>
+              <input type="text" id="fridge_unit" placeholder="ถุง, ขวด, กล่อง">
+            </div>
+            <div class="form-group">
+              <label>วันหมดอายุ</label>
+              <input type="text" id="fridge_expiry" placeholder="DD/MM/YYYY">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">เพิ่ม</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleForm('fridgeForm')">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+
+      <h3 class="sub-header"><i class="fas fa-pepper-hot"></i> เครื่องปรุงที่ต้องมี</h3>
+      <div id="condimentsList" class="condiments-grid"></div>
+
+      <h3 class="sub-header"><i class="fas fa-box"></i> ของในตู้เย็น</h3>
+      <div class="data-table-container">
+        <table class="data-table" id="fridgeTable">
+          <thead>
+            <tr>
+              <th>รายการ</th>
+              <th>หมวด</th>
+              <th>จำนวน</th>
+              <th>หมดอายุ</th>
+              <th>ซื้อเมื่อ</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <?!= include('Scripts'); ?>
+</body>
+</html>

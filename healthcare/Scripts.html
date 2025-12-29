@@ -1,0 +1,814 @@
+<script>
+// ==================== GLOBAL VARIABLES ====================
+let mealPlans = [];
+
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', function() {
+  initializeTabs();
+  initializeDateFields();
+  loadDashboard();
+});
+
+function initializeTabs() {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const tabId = this.dataset.tab;
+      switchTab(tabId);
+    });
+  });
+}
+
+function switchTab(tabId) {
+  // Update nav tabs
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+  // Update content
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+
+  // Load data for the tab
+  switch(tabId) {
+    case 'dashboard':
+      loadDashboard();
+      break;
+    case 'health':
+      loadHealthData();
+      break;
+    case 'exercise':
+      loadExerciseData();
+      break;
+    case 'appointments':
+      loadAppointments();
+      break;
+    case 'meals':
+      loadMeals();
+      loadMealPlans();
+      break;
+    case 'grocery':
+      loadGroceryList();
+      break;
+    case 'fridge':
+      loadFridgeItems();
+      loadCondiments();
+      break;
+  }
+}
+
+function initializeDateFields() {
+  google.script.run
+    .withSuccessHandler(function(dt) {
+      document.querySelectorAll('input[id$="_date"]').forEach(input => {
+        if (!input.value) input.value = dt.date;
+      });
+      document.querySelectorAll('input[type="time"]').forEach(input => {
+        if (!input.value) input.value = dt.time;
+      });
+    })
+    .getCurrentDateTime();
+}
+
+// ==================== DASHBOARD ====================
+function loadDashboard() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+
+      // Surgery countdown
+      const daysLeft = data.daysUntilSurgery;
+      const countdownEl = document.getElementById('countdownDays');
+      const phaseEl = document.getElementById('phaseIndicator');
+      const headerCountdown = document.getElementById('surgeryCountdown');
+
+      if (daysLeft > 0) {
+        countdownEl.textContent = daysLeft + ' วัน';
+        phaseEl.textContent = 'ช่วงเตรียมตัวก่อนผ่าตัด';
+        headerCountdown.textContent = 'อีก ' + daysLeft + ' วัน ถึงวันผ่าตัด';
+      } else if (daysLeft === 0) {
+        countdownEl.textContent = 'วันนี้!';
+        phaseEl.textContent = 'วันผ่าตัด';
+        headerCountdown.textContent = 'วันผ่าตัด!';
+      } else {
+        countdownEl.textContent = Math.abs(daysLeft) + ' วัน';
+        phaseEl.textContent = 'หลังผ่าตัด';
+        headerCountdown.textContent = 'หลังผ่าตัด ' + Math.abs(daysLeft) + ' วัน';
+      }
+
+      // Latest health
+      const healthCard = document.getElementById('latestHealthCard');
+      if (data.latestHealth && data.latestHealth['วันที่']) {
+        const h = data.latestHealth;
+        healthCard.innerHTML = `
+          <div class="health-stats">
+            <div class="health-stat">
+              <div class="value">${h['ความดันบน'] || '-'}/${h['ความดันล่าง'] || '-'}</div>
+              <div class="label">ความดัน</div>
+            </div>
+            <div class="health-stat">
+              <div class="value">${h['ชีพจร'] || '-'}</div>
+              <div class="label">ชีพจร</div>
+            </div>
+            <div class="health-stat">
+              <div class="value">${h['น้ำหนัก(กก.)'] || '-'}</div>
+              <div class="label">น้ำหนัก</div>
+            </div>
+            <div class="health-stat">
+              <div class="value">${h['ระดับออกซิเจน(%)'] || '-'}%</div>
+              <div class="label">O2</div>
+            </div>
+          </div>
+          <p style="margin-top:10px;font-size:0.85rem;color:var(--secondary)">
+            บันทึกเมื่อ: ${h['วันที่']} ${h['เวลา']}
+          </p>
+        `;
+      } else {
+        healthCard.innerHTML = '<p class="no-data">ยังไม่มีข้อมูล คลิก "บันทึกสุขภาพ" เพื่อเริ่ม</p>';
+      }
+
+      // Upcoming appointments
+      const aptCard = document.getElementById('upcomingAppointmentsCard');
+      if (data.upcomingAppointments && data.upcomingAppointments.length > 0) {
+        aptCard.innerHTML = '<div class="apt-list">' +
+          data.upcomingAppointments.map(apt => {
+            const isSurgery = apt['หัตถการ/รายละเอียด'] && apt['หัตถการ/รายละเอียด'].includes('ผ่าตัด');
+            return `
+              <div class="apt-item ${isSurgery ? 'surgery' : ''}">
+                <div>
+                  <div class="date">${apt['วันที่']} ${apt['เวลา']}</div>
+                  <div class="detail">${apt['หัตถการ/รายละเอียด'] || apt['แผนก']}</div>
+                </div>
+              </div>
+            `;
+          }).join('') + '</div>';
+      } else {
+        aptCard.innerHTML = '<p class="no-data">ไม่มีนัดหมายที่ใกล้ถึง</p>';
+      }
+
+      // Grocery to buy
+      const groceryCard = document.getElementById('groceryToBuyCard');
+      groceryCard.innerHTML = `
+        <div class="big-number">${data.groceryToBuy || 0}</div>
+        <div>รายการต้องซื้อ</div>
+      `;
+
+      // Today's meals
+      const mealsCard = document.getElementById('todayMealsCard');
+      if (data.todayMeals && data.todayMeals.length > 0) {
+        mealsCard.innerHTML = data.todayMeals.map(m =>
+          `<div style="margin-bottom:5px"><strong>${m['มื้อ']}:</strong> ${m['เมนู']}</div>`
+        ).join('');
+      } else {
+        mealsCard.innerHTML = '<p class="no-data">ยังไม่ได้บันทึกอาหารวันนี้</p>';
+      }
+    })
+    .withFailureHandler(handleError)
+    .getDashboardData();
+}
+
+// ==================== HEALTH DATA ====================
+function loadHealthData() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderHealthTable(data);
+    })
+    .withFailureHandler(handleError)
+    .getHealthData(30);
+}
+
+function renderHealthTable(data) {
+  const tbody = document.querySelector('#healthTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => `
+    <tr>
+      <td>${row['วันที่']}</td>
+      <td>${row['เวลา']}</td>
+      <td>${row['ความดันบน'] || '-'}/${row['ความดันล่าง'] || '-'}</td>
+      <td>${row['ชีพจร'] || '-'}</td>
+      <td>${row['น้ำหนัก(กก.)'] || '-'}</td>
+      <td>${row['อุณหภูมิ(°C)'] || '-'}</td>
+      <td>${row['ระดับออกซิเจน(%)'] || '-'}</td>
+      <td>${row['อาการ'] || '-'}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteHealthRecord(${row._rowIndex})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function submitHealthData(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    date: document.getElementById('health_date').value,
+    time: document.getElementById('health_time').value,
+    systolic: document.getElementById('health_systolic').value,
+    diastolic: document.getElementById('health_diastolic').value,
+    pulse: document.getElementById('health_pulse').value,
+    weight: document.getElementById('health_weight').value,
+    temperature: document.getElementById('health_temp').value,
+    oxygen: document.getElementById('health_oxygen').value,
+    symptoms: document.getElementById('health_symptoms').value,
+    notes: document.getElementById('health_notes').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('healthForm');
+      loadHealthData();
+      clearForm('health');
+    })
+    .withFailureHandler(handleError)
+    .saveHealthData(data);
+}
+
+function deleteHealthRecord(rowIndex) {
+  if (!confirm('ต้องการลบข้อมูลนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบข้อมูลเรียบร้อย', 'success');
+      loadHealthData();
+    })
+    .withFailureHandler(handleError)
+    .deleteHealthRecord(rowIndex);
+}
+
+// ==================== EXERCISE ====================
+function loadExerciseData() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderExerciseTable(data);
+    })
+    .withFailureHandler(handleError)
+    .getExerciseData(30);
+}
+
+function renderExerciseTable(data) {
+  const tbody = document.querySelector('#exerciseTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => `
+    <tr>
+      <td>${row['วันที่']}</td>
+      <td>${row['เวลา']}</td>
+      <td>${row['ประเภท']}</td>
+      <td>${row['ระยะเวลา(นาที)']} นาที</td>
+      <td>${row['ความเข้มข้น']}</td>
+      <td>${row['ความรู้สึก']}</td>
+      <td>${row['หมายเหตุ'] || '-'}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteExerciseRecord(${row._rowIndex})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function submitExercise(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    date: document.getElementById('exercise_date').value,
+    time: document.getElementById('exercise_time').value,
+    type: document.getElementById('exercise_type').value,
+    duration: document.getElementById('exercise_duration').value,
+    intensity: document.getElementById('exercise_intensity').value,
+    feeling: document.getElementById('exercise_feeling').value,
+    notes: document.getElementById('exercise_notes').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('exerciseForm');
+      loadExerciseData();
+      clearForm('exercise');
+    })
+    .withFailureHandler(handleError)
+    .saveExercise(data);
+}
+
+function deleteExerciseRecord(rowIndex) {
+  if (!confirm('ต้องการลบข้อมูลนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบข้อมูลเรียบร้อย', 'success');
+      loadExerciseData();
+    })
+    .withFailureHandler(handleError)
+    .deleteExerciseRecord(rowIndex);
+}
+
+// ==================== APPOINTMENTS ====================
+function loadAppointments() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderAppointmentsTable(data);
+    })
+    .withFailureHandler(handleError)
+    .getAppointments();
+}
+
+function renderAppointmentsTable(data) {
+  const tbody = document.querySelector('#appointmentTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">ยังไม่มีนัดหมาย</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => {
+    const isSurgery = row['หัตถการ/รายละเอียด'] && row['หัตถการ/รายละเอียด'].includes('ผ่าตัด');
+    const statusClass = getStatusClass(row['สถานะ']);
+    return `
+      <tr class="${isSurgery ? 'surgery-row' : ''}">
+        <td><strong>${row['วันที่']}</strong></td>
+        <td>${row['เวลา']}</td>
+        <td>${row['แพทย์'] || '-'}</td>
+        <td>${row['แผนก'] || '-'}</td>
+        <td>${row['โรงพยาบาล'] || '-'}</td>
+        <td>${row['หัตถการ/รายละเอียด'] || '-'}</td>
+        <td><span class="status-badge ${statusClass}">${row['สถานะ']}</span></td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteAppointment(${row._rowIndex})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function submitAppointment(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    date: document.getElementById('apt_date').value,
+    time: document.getElementById('apt_time').value,
+    doctor: document.getElementById('apt_doctor').value,
+    department: document.getElementById('apt_department').value,
+    hospital: document.getElementById('apt_hospital').value,
+    procedure: document.getElementById('apt_procedure').value,
+    status: document.getElementById('apt_status').value,
+    notes: document.getElementById('apt_notes').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('appointmentForm');
+      loadAppointments();
+      clearForm('apt');
+    })
+    .withFailureHandler(handleError)
+    .saveAppointment(data);
+}
+
+function deleteAppointment(rowIndex) {
+  if (!confirm('ต้องการลบนัดหมายนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบนัดหมายเรียบร้อย', 'success');
+      loadAppointments();
+    })
+    .withFailureHandler(handleError)
+    .deleteAppointment(rowIndex);
+}
+
+// ==================== MEALS ====================
+function loadMeals() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderMealsTable(data);
+    })
+    .withFailureHandler(handleError)
+    .getMeals(30);
+}
+
+function renderMealsTable(data) {
+  const tbody = document.querySelector('#mealTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => `
+    <tr>
+      <td>${row['วันที่']}</td>
+      <td>${row['มื้อ']}</td>
+      <td><strong>${row['เมนู']}</strong></td>
+      <td>${row['ส่วนประกอบ'] || '-'}</td>
+      <td>${row['แคลอรี่'] || '-'}</td>
+      <td>${row['โปรตีน(ก.)'] || '-'}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteMeal(${row._rowIndex})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function loadMealPlans() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      mealPlans = data;
+    })
+    .getMealPlans();
+}
+
+function showMealPlans() {
+  document.getElementById('mealPlansModal').classList.remove('hidden');
+  renderMealPlansList('all');
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      renderMealPlansList(this.dataset.filter);
+    });
+  });
+}
+
+function closeMealPlans() {
+  document.getElementById('mealPlansModal').classList.add('hidden');
+}
+
+function renderMealPlansList(filter) {
+  const container = document.getElementById('mealPlansList');
+  let filtered = mealPlans;
+
+  if (filter !== 'all') {
+    filtered = mealPlans.filter(m => m['เหมาะสำหรับ'] === filter);
+  }
+
+  container.innerHTML = filtered.map(meal => `
+    <div class="meal-plan-card" onclick="selectMealPlan('${meal['ชื่อเมนู']}', '${meal['ส่วนประกอบ']}', ${meal['แคลอรี่']}, ${meal['โปรตีน(ก.)']})">
+      <h4>${meal['ชื่อเมนู']}</h4>
+      <div class="meal-type">${meal['ประเภท']} - ${meal['เหมาะสำหรับ']}</div>
+      <div class="ingredients">${meal['ส่วนประกอบ']}</div>
+      <div class="nutrition">
+        <span><i class="fas fa-fire"></i> ${meal['แคลอรี่']} kcal</span>
+        <span><i class="fas fa-drumstick-bite"></i> ${meal['โปรตีน(ก.)']}g</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectMealPlan(menu, ingredients, calories, protein) {
+  document.getElementById('meal_menu').value = menu;
+  document.getElementById('meal_ingredients').value = ingredients;
+  document.getElementById('meal_calories').value = calories;
+  document.getElementById('meal_protein').value = protein;
+  closeMealPlans();
+  toggleForm('mealForm');
+  document.getElementById('mealForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function submitMeal(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    date: document.getElementById('meal_date').value,
+    mealType: document.getElementById('meal_type').value,
+    menu: document.getElementById('meal_menu').value,
+    ingredients: document.getElementById('meal_ingredients').value,
+    calories: document.getElementById('meal_calories').value,
+    protein: document.getElementById('meal_protein').value,
+    notes: document.getElementById('meal_notes').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('mealForm');
+      loadMeals();
+      clearForm('meal');
+    })
+    .withFailureHandler(handleError)
+    .saveMeal(data);
+}
+
+function deleteMeal(rowIndex) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบข้อมูลเรียบร้อย', 'success');
+      loadMeals();
+    })
+    .withFailureHandler(handleError)
+    .deleteMeal(rowIndex);
+}
+
+// ==================== GROCERY ====================
+function loadGroceryList() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderGroceryTable(data);
+
+      // Update counts
+      const toBuy = data.filter(d => d['สถานะ'] === 'ต้องซื้อ').length;
+      const bought = data.filter(d => d['สถานะ'] === 'ซื้อแล้ว').length;
+      document.getElementById('toBuyCount').textContent = toBuy;
+      document.getElementById('boughtCount').textContent = bought;
+    })
+    .withFailureHandler(handleError)
+    .getGroceryList();
+}
+
+function renderGroceryTable(data) {
+  const tbody = document.querySelector('#groceryTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">ยังไม่มีรายการ</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => {
+    const isBought = row['สถานะ'] === 'ซื้อแล้ว';
+    return `
+      <tr style="${isBought ? 'opacity:0.6' : ''}">
+        <td>${row['วันที่ต้องซื้อ']}</td>
+        <td><strong>${row['รายการ']}</strong></td>
+        <td>${row['หมวด']}</td>
+        <td>${row['จำนวน']} ${row['หน่วย']}</td>
+        <td>
+          <span class="status-badge ${isBought ? 'status-bought' : 'status-tobuy'}"
+                onclick="toggleGroceryStatus(${row._rowIndex}, '${row['สถานะ']}')"
+                style="cursor:pointer">
+            ${row['สถานะ']}
+          </span>
+        </td>
+        <td>${row['ซื้อเมื่อ'] || '-'}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteGroceryItem(${row._rowIndex})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function toggleGroceryStatus(rowIndex, currentStatus) {
+  const newStatus = currentStatus === 'ต้องซื้อ' ? 'ซื้อแล้ว' : 'ต้องซื้อ';
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      loadGroceryList();
+    })
+    .withFailureHandler(handleError)
+    .updateGroceryStatus(rowIndex, newStatus);
+}
+
+function generateGroceryList() {
+  if (!confirm('สร้างรายการซื้อของสำหรับ 3 วันข้างหน้า?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      loadGroceryList();
+    })
+    .withFailureHandler(handleError)
+    .generateGroceryList(3);
+}
+
+function submitGroceryItem(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    buyDate: document.getElementById('grocery_date').value,
+    item: document.getElementById('grocery_item').value,
+    category: document.getElementById('grocery_category').value,
+    quantity: document.getElementById('grocery_quantity').value,
+    unit: document.getElementById('grocery_unit').value,
+    notes: document.getElementById('grocery_notes').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('groceryForm');
+      loadGroceryList();
+      clearForm('grocery');
+    })
+    .withFailureHandler(handleError)
+    .saveGroceryItem(data);
+}
+
+function deleteGroceryItem(rowIndex) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบรายการเรียบร้อย', 'success');
+      loadGroceryList();
+    })
+    .withFailureHandler(handleError)
+    .deleteGroceryItem(rowIndex);
+}
+
+// ==================== FRIDGE ====================
+function loadFridgeItems() {
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      renderFridgeTable(data);
+    })
+    .withFailureHandler(handleError)
+    .getFridgeItems();
+}
+
+function renderFridgeTable(data) {
+  const tbody = document.querySelector('#fridgeTable tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">ยังไม่มีของในตู้เย็น</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => `
+    <tr>
+      <td><strong>${row['รายการ']}</strong></td>
+      <td>${row['หมวด']}</td>
+      <td>${row['จำนวน']} ${row['หน่วย']}</td>
+      <td>${row['วันหมดอายุ'] || '-'}</td>
+      <td>${row['ซื้อเมื่อ'] || '-'}</td>
+      <td>${row['สถานะ']}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteFridgeItem(${row._rowIndex})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function loadCondiments() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      renderCondiments(data);
+    })
+    .getCondiments();
+}
+
+function renderCondiments(data) {
+  const container = document.getElementById('condimentsList');
+  if (!data || data.length === 0) {
+    container.innerHTML = '<p>ยังไม่มีรายการ</p>';
+    return;
+  }
+
+  container.innerHTML = data.map(item => {
+    const isMust = item['สถานะ'] === 'ต้องมี';
+    return `
+      <div class="condiment-item">
+        <span class="name">${item['รายการ']}</span>
+        <span class="${isMust ? 'status-must' : 'status-recommend'}">${item['สถานะ']}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function submitFridgeItem(e) {
+  e.preventDefault();
+  showLoading();
+
+  const data = {
+    item: document.getElementById('fridge_item').value,
+    category: document.getElementById('fridge_category').value,
+    quantity: document.getElementById('fridge_quantity').value,
+    unit: document.getElementById('fridge_unit').value,
+    expiry: document.getElementById('fridge_expiry').value,
+    purchaseDate: new Date().toLocaleDateString('th-TH')
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      showToast(result.message, 'success');
+      toggleForm('fridgeForm');
+      loadFridgeItems();
+      clearForm('fridge');
+    })
+    .withFailureHandler(handleError)
+    .saveFridgeItem(data);
+}
+
+function deleteFridgeItem(rowIndex) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  showLoading();
+  google.script.run
+    .withSuccessHandler(function() {
+      hideLoading();
+      showToast('ลบรายการเรียบร้อย', 'success');
+      loadFridgeItems();
+    })
+    .withFailureHandler(handleError)
+    .deleteFridgeItem(rowIndex);
+}
+
+// ==================== QUICK ACTIONS ====================
+function showQuickHealth() {
+  switchTab('health');
+  toggleForm('healthForm');
+}
+
+function showQuickMeal() {
+  switchTab('meals');
+  toggleForm('mealForm');
+}
+
+// ==================== UTILITIES ====================
+function toggleForm(formId) {
+  const form = document.getElementById(formId);
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden')) {
+    initializeDateFields();
+  }
+}
+
+function clearForm(prefix) {
+  document.querySelectorAll(`[id^="${prefix}_"]`).forEach(el => {
+    if (el.tagName === 'SELECT') {
+      el.selectedIndex = 0;
+    } else {
+      el.value = '';
+    }
+  });
+  initializeDateFields();
+}
+
+function getStatusClass(status) {
+  switch(status) {
+    case 'รอดำเนินการ': return 'status-pending';
+    case 'ยืนยันแล้ว': return 'status-confirmed';
+    case 'เสร็จสิ้น': return 'status-completed';
+    default: return 'status-pending';
+  }
+}
+
+function showLoading() {
+  document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.add('hidden');
+}
+
+function showToast(message, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = 'toast ' + type;
+  setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3000);
+}
+
+function handleError(error) {
+  hideLoading();
+  showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+  console.error(error);
+}
+</script>
