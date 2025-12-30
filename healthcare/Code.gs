@@ -12,7 +12,7 @@
 
 // ==================== CONFIGURATION ====================
 const CONFIG = {
-  SURGERY_DATE: new Date(2025, 1, 28), // 28 Feb 2025 (month is 0-indexed)
+  SURGERY_DATE: new Date(2026, 1, 28), // 28 Feb 2026 = 28 ก.พ. 2569
   PATIENT_NAME: 'คุณแม่',
   SHEETS: {
     HEALTH: 'ข้อมูลสุขภาพ',
@@ -172,7 +172,7 @@ function addSurgeryAppointment(ss) {
 
   if (!surgeryExists) {
     sheet.appendRow([
-      '28/02/2568', '08:00', 'แพทย์ผ่าตัด', 'ศัลยกรรม', 'โรงพยาบาล',
+      '28/02/2569', '08:00', 'แพทย์ผ่าตัด', 'ศัลยกรรม', 'โรงพยาบาล',
       'ผ่าตัดต่อมไทรอยด์ + ก้อนเนื้อ + รักษาจุดที่ปอด', 'รอดำเนินการ',
       'งดน้ำงดอาหารก่อนผ่าตัด 8 ชม.'
     ]);
@@ -346,7 +346,7 @@ function getDashboardData() {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate day calculation
 
-  const surgeryDate = new Date(2025, 1, 28); // 28 Feb 2025
+  const surgeryDate = new Date(2026, 1, 28); // 28 Feb 2026 = 28 ก.พ. 2569
   surgeryDate.setHours(0, 0, 0, 0);
 
   const daysUntilSurgery = Math.round((surgeryDate - today) / (1000 * 60 * 60 * 24));
@@ -373,7 +373,7 @@ function getDashboardData() {
 
   return {
     patientName: CONFIG.PATIENT_NAME,
-    surgeryDate: '28/02/2568',
+    surgeryDate: '28/02/2569',
     daysUntilSurgery: daysUntilSurgery,
     phase: daysUntilSurgery > 0 ? 'ก่อนผ่าตัด' : 'หลังผ่าตัด',
     latestHealth: latestHealth,
