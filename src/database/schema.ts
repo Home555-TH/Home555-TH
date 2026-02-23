@@ -36,6 +36,18 @@ export interface EPRRecord {
   synced_to_sheets: number;
 }
 
+// ─── Medication / ERPNext Cache Types ─────────────────────────────────────────
+
+export interface MedicationAnalysisRecord {
+  id: string;
+  analysis_type: string;           // interaction | dosage | expiry | reorder | patient | stock
+  reference_id: string;            // ERPNext doc name (prescription, patient, etc.)
+  reference_name: string;          // human-readable name
+  result_json: string;             // JSON-serialised AI result
+  alert_count: number;
+  created_at: number;
+}
+
 export class DatabaseManager {
   private db: Database.Database;
 
@@ -87,6 +99,19 @@ export class DatabaseManager {
       );
     `);
 
+    // Create medication analysis cache table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS medication_analysis (
+        id TEXT PRIMARY KEY,
+        analysis_type TEXT NOT NULL,
+        reference_id TEXT NOT NULL,
+        reference_name TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        alert_count INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL
+      );
+    `);
+
     // Create indexes for better query performance
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_cnc_machine_id ON cnc_machine_data(machine_id);
@@ -97,6 +122,10 @@ export class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_epr_machine_id ON epr_records(machine_id);
       CREATE INDEX IF NOT EXISTS idx_epr_status ON epr_records(status);
       CREATE INDEX IF NOT EXISTS idx_epr_synced ON epr_records(synced_to_sheets);
+
+      CREATE INDEX IF NOT EXISTS idx_med_analysis_type ON medication_analysis(analysis_type);
+      CREATE INDEX IF NOT EXISTS idx_med_reference_id ON medication_analysis(reference_id);
+      CREATE INDEX IF NOT EXISTS idx_med_created_at ON medication_analysis(created_at);
     `);
   }
 
@@ -217,6 +246,43 @@ export class DatabaseManager {
     `);
 
     return stmt.run(...values, id);
+  }
+
+  // ─── Medication Analysis Cache ─────────────────────────────────────────────
+
+  insertMedicationAnalysis(record: MedicationAnalysisRecord) {
+    const stmt = this.db.prepare(`
+      INSERT INTO medication_analysis
+      (id, analysis_type, reference_id, reference_name, result_json, alert_count, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    return stmt.run(
+      record.id, record.analysis_type, record.reference_id, record.reference_name,
+      record.result_json, record.alert_count, record.created_at
+    );
+  }
+
+  getMedicationAnalyses(type?: string, limit = 50): MedicationAnalysisRecord[] {
+    if (type) {
+      const stmt = this.db.prepare(`
+        SELECT * FROM medication_analysis WHERE analysis_type = ?
+        ORDER BY created_at DESC LIMIT ?
+      `);
+      return stmt.all(type, limit) as MedicationAnalysisRecord[];
+    }
+    const stmt = this.db.prepare(`
+      SELECT * FROM medication_analysis ORDER BY created_at DESC LIMIT ?
+    `);
+    return stmt.all(limit) as MedicationAnalysisRecord[];
+  }
+
+  getLatestMedicationAnalysis(type: string, referenceId: string): MedicationAnalysisRecord | null {
+    const stmt = this.db.prepare(`
+      SELECT * FROM medication_analysis
+      WHERE analysis_type = ? AND reference_id = ?
+      ORDER BY created_at DESC LIMIT 1
+    `);
+    return (stmt.get(type, referenceId) as MedicationAnalysisRecord) || null;
   }
 
   close() {

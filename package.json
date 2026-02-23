@@ -4,12 +4,16 @@
   "description": "AI-Powered CNC ePR Cloud System with Google Sheets Integration",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "node --loader tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest",
-    "generate-data": "tsx src/utils/sampleDataGenerator.ts",
-    "export-csv": "tsx src/utils/exportToCSV.ts"
+    "generate-data": "node --loader tsx src/utils/sampleDataGenerator.ts",
+    "export-csv": "node --loader tsx src/utils/exportToCSV.ts",
+    "create-job-order": "node --loader tsx src/utils/createJobOrder.ts",
+    "create-sample-jobs": "node --loader tsx src/utils/quickJobOrder.ts",
+    "view-orders": "node --loader tsx src/utils/viewOrders.ts",
+    "sync": "curl -X POST http://localhost:3000/api/sync/all"
   },
   "keywords": ["cnc", "epr", "google-sheets", "ai", "production-records"],
   "author": "Claude",
