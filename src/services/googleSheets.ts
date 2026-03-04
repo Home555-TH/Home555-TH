@@ -74,7 +74,7 @@ export class GoogleSheetsService {
       });
 
       const sheetExists = response.data.sheets?.some(
-        sheet => sheet.properties?.title === sheetName
+        (sheet: { properties?: { title?: string | null } | null }) => sheet.properties?.title === sheetName
       );
 
       if (!sheetExists) {

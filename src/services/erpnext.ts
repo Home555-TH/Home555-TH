@@ -39,6 +39,7 @@ export interface ERPNextStockBalance {
   qty: number;
   valuation_rate: number;
   stock_value: number;
+  stock_uom?: string;
 }
 
 export interface ERPNextPrescription {
@@ -154,7 +155,7 @@ export class ERPNextClient {
   async getList<T>(
     doctype: string,
     fields: string[] = ['name'],
-    filters: Array<[string, string, string]> = [],
+    filters: Array<[string, string, string | string[]]> = [],
     limit = 100
   ): Promise<T[]> {
     const params = new URLSearchParams({
@@ -201,7 +202,7 @@ export class ERPNextClient {
   }
 
   async getStockBalance(warehouse?: string): Promise<ERPNextStockBalance[]> {
-    const filters: Array<[string, string, string]> = [];
+    const filters: Array<[string, string, string | string[]]> = [];
     if (warehouse) filters.push(['warehouse', '=', warehouse]);
 
     return this.callMethod<ERPNextStockBalance[]>(
@@ -265,7 +266,7 @@ export class ERPNextClient {
   }
 
   async getRecentStockMovements(itemCode?: string, limit = 100): Promise<ERPNextStockEntry[]> {
-    const filters: Array<[string, string, string]> = [['docstatus', '=', '1']];
+    const filters: Array<[string, string, string | string[]]> = [['docstatus', '=', '1']];
     if (itemCode) filters.push(['items.item_code', '=', itemCode]);
 
     return this.getList<ERPNextStockEntry>(

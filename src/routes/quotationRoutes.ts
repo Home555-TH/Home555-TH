@@ -124,7 +124,7 @@ export function createQuotationRoutes(
       const draft = await quotationAI.draftQuotation(
         customer_name,
         requirements,
-        items as Array<{ item_code: string; item_name: string; standard_rate?: number }>
+        items as unknown as Array<{ item_code: string; item_name: string; standard_rate?: number }>
       );
 
       res.json({ success: true, data: draft });
