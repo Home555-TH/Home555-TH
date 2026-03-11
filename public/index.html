@@ -12,6 +12,56 @@
             min-height: 100vh;
             padding: 20px;
         }
+        /* ── Tab navigation ── */
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.4);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover, .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        /* ── Medication-specific ── */
+        .med-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .alert-critical { border-left: 4px solid #dc3545; background: #fff5f5; }
+        .alert-high     { border-left: 4px solid #fd7e14; background: #fff8f0; }
+        .alert-medium   { border-left: 4px solid #ffc107; background: #fffdf0; }
+        .alert-safe     { border-left: 4px solid #28a745; background: #f0fff4; }
+        .badge-critical { background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .badge-high     { background: #ffe5d0; color: #7d3200; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .badge-medium   { background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .badge-safe,.badge-safe-label { background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .badge-immediate { background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .badge-soon      { background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .badge-plan      { background: #d1ecf1; color: #0c5460; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-box { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
+        .stat-box .num { font-size: 2em; font-weight: 700; color: #667eea; }
+        .stat-box .lbl { font-size: 11px; color: #666; margin-top: 4px; }
+        .loading { color: #888; font-style: italic; padding: 10px 0; }
+        .err-msg { color: #dc3545; font-size: 13px; padding: 8px; background: #fff5f5; border-radius: 4px; }
+        .section-title { font-size: 1em; font-weight: 700; color: #444; margin: 16px 0 8px; }
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -128,8 +178,18 @@
     <div class="container">
         <div class="header">
             <h1>🤖 CNC ePR AI Cloud System</h1>
-            <p>AI-Powered Production Management with Google Sheets Integration</p>
+            <p>AI-Powered Production Management · ERPNext Medication Integration</p>
         </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('cnc-tab', this)">📊 CNC / EPR</button>
+            <button class="tab-btn" onclick="switchTab('med-tab', this)">💊 Medication</button>
+            <button class="tab-btn" onclick="switchTab('quot-tab', this)">📋 AI Quotation</button>
+        </div>
+
+        <!-- ══════════ CNC / EPR TAB ══════════ -->
+        <div id="cnc-tab" class="tab-panel active">
 
         <div class="sync-status" id="syncStatus">
             <h3>Sync Status</h3>
@@ -248,7 +308,176 @@
             <button onclick="loadEPRData()">Refresh</button>
             <div id="eprData" class="data-display"></div>
         </div>
-    </div>
+
+        </div><!-- end #cnc-tab -->
+
+        <!-- ══════════ MEDICATION TAB ══════════ -->
+        <div id="med-tab" class="tab-panel">
+
+            <!-- ERPNext Status Banner -->
+            <div class="card" style="margin-bottom:20px;" id="medStatusCard">
+                <h2>🔌 ERPNext Connection Status</h2>
+                <div id="medStatus" class="loading">Checking connection...</div>
+                <button onclick="checkMedStatus()" style="margin-top:10px;">Recheck</button>
+            </div>
+
+            <!-- Stat summary row -->
+            <div class="stat-grid" id="medStats" style="display:none;">
+                <div class="stat-box"><div class="num" id="statItems">—</div><div class="lbl">Medication Items</div></div>
+                <div class="stat-box"><div class="num" id="statExpiry">—</div><div class="lbl">Expiring ≤90 days</div></div>
+                <div class="stat-box"><div class="num" id="statReorder">—</div><div class="lbl">Reorder Needed</div></div>
+            </div>
+
+            <div class="med-grid">
+
+                <!-- ── Stock & Inventory ── -->
+                <div class="card">
+                    <h2>📦 Stock &amp; Inventory</h2>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button onclick="loadMedItems()">Load Items</button>
+                        <button onclick="loadStockBalance()" class="btn-secondary">Stock Balance</button>
+                        <button onclick="loadStockAnalysis()" class="btn-secondary">AI Analysis</button>
+                    </div>
+                    <div id="medItemsResult" class="data-display" style="display:none; margin-top:12px;"></div>
+                </div>
+
+                <!-- ── Expiry Risk ── -->
+                <div class="card">
+                    <h2>⏰ Expiry Risk</h2>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label>Days ahead</label>
+                        <input type="number" id="expiryDays" value="90" min="1" max="365" style="width:100px;">
+                    </div>
+                    <button onclick="loadExpiryRisk()">Check Expiry Risk (AI)</button>
+                    <div id="expiryResult" class="data-display" style="display:none; margin-top:12px;"></div>
+                </div>
+
+                <!-- ── Reorder Forecast ── -->
+                <div class="card">
+                    <h2>🔄 Reorder Forecast</h2>
+                    <p style="font-size:13px; color:#666; margin-bottom:12px;">AI-powered reorder recommendations based on current stock vs ERPNext reorder levels.</p>
+                    <button onclick="loadReorderForecast()">Generate Forecast (AI)</button>
+                    <div id="reorderResult" class="data-display" style="display:none; margin-top:12px;"></div>
+                </div>
+
+                <!-- ── Prescriptions ── -->
+                <div class="card">
+                    <h2>📋 Prescriptions</h2>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                        <button onclick="loadPrescriptions()">Load Active</button>
+                    </div>
+                    <div id="rxList" class="data-display" style="display:none;"></div>
+
+                    <div class="section-title">Drug Interaction Check</div>
+                    <div class="form-group">
+                        <label>Prescription / Encounter ID</label>
+                        <input type="text" id="rxInteractionId" placeholder="PAT-ENC-2024-00001">
+                    </div>
+                    <button onclick="checkInteractions()">Check Interactions (AI)</button>
+                    <div id="interactionResult" class="data-display" style="display:none; margin-top:12px;"></div>
+
+                    <div class="section-title">Dosage Safety Analysis</div>
+                    <div class="form-group">
+                        <label>Prescription / Encounter ID</label>
+                        <input type="text" id="rxDosageId" placeholder="PAT-ENC-2024-00001">
+                    </div>
+                    <button onclick="checkDosage()">Analyze Dosage (AI)</button>
+                    <div id="dosageResult" class="data-display" style="display:none; margin-top:12px;"></div>
+                </div>
+
+                <!-- ── Patient Insights ── -->
+                <div class="card">
+                    <h2>👤 Patient Medication Insights</h2>
+                    <div class="form-group">
+                        <label>Patient ID (ERPNext)</label>
+                        <input type="text" id="patientId" placeholder="HLC-PAT-2024-00001">
+                    </div>
+                    <button onclick="loadPatientInsights()">Full AI Review</button>
+                    <div id="patientResult" class="data-display" style="display:none; margin-top:12px;"></div>
+                </div>
+
+                <!-- ── AI History ── -->
+                <div class="card">
+                    <h2>🕑 AI Analysis History</h2>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                        <button onclick="loadHistory()">All</button>
+                        <button onclick="loadHistory('interaction')" class="btn-secondary">Interactions</button>
+                        <button onclick="loadHistory('expiry')"     class="btn-secondary">Expiry</button>
+                        <button onclick="loadHistory('reorder')"    class="btn-secondary">Reorder</button>
+                        <button onclick="loadHistory('patient')"    class="btn-secondary">Patient</button>
+                    </div>
+                    <div id="historyResult" class="data-display" style="display:none;"></div>
+                </div>
+
+            </div><!-- end med-grid -->
+        </div><!-- end #med-tab -->
+
+        <!-- ══════════ AI QUOTATION TAB ══════════ -->
+        <div id="quot-tab" class="tab-panel">
+
+        <!-- Status -->
+        <div class="sync-status" id="quotStatus">
+            <h3>AI Quotation Service</h3>
+            <div id="quotStatusInfo"><span class="loading">Checking...</span></div>
+        </div>
+
+        <!-- Pipeline -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Pipeline Overview</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <button onclick="loadQuotOpen()">Load Open Quotes</button>
+                <button onclick="loadQuotPipeline()" style="background:#764ba2;">AI Pipeline Analysis</button>
+            </div>
+            <div id="quotPipelineResult"></div>
+        </div>
+
+        <!-- Single Quote -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Analyse Quote</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+                <input id="quotId" type="text" placeholder="Quotation ID (e.g. SAL-QTN-2024-00001)"
+                    style="flex:1;min-width:220px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                <input id="quotMargin" type="number" placeholder="Margin % (default 25)"
+                    style="width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;" value="25">
+                <button onclick="loadQuotAnalyze()">AI Analyse</button>
+                <button onclick="loadQuotPricing()" style="background:#28a745;">Pricing Suggestions</button>
+            </div>
+            <div id="quotAnalyzeResult"></div>
+        </div>
+
+        <!-- Draft Quotation -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Draft New Quotation (AI)</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+                <input id="quotCustomer" type="text" placeholder="Customer Name"
+                    style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                <textarea id="quotRequirements" rows="3" placeholder="Describe the customer requirements (e.g. 50 pcs CNC turned parts, stainless steel, OD 20mm, tolerance ±0.01)"
+                    style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+                <button onclick="draftQuotation()" style="align-self:flex-start;">Generate Draft</button>
+            </div>
+            <div id="quotDraftResult"></div>
+        </div>
+
+        <!-- Lead Time -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Lead Time Estimator</h3>
+            <div id="quotLeadItems" style="margin-bottom:10px;">
+                <div class="quot-item-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                    <input type="text" placeholder="Item Code" class="lt-code" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                    <input type="text" placeholder="Item Name" class="lt-name" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                    <input type="number" placeholder="Qty" class="lt-qty" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;" value="1">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button onclick="addLeadTimeRow()" style="background:#6c757d;">+ Add Item</button>
+                <button onclick="estimateLeadTime()">Estimate Lead Time</button>
+            </div>
+            <div id="quotLeadResult" style="margin-top:12px;"></div>
+        </div>
+
+        </div><!-- end #quot-tab -->
+
+    </div><!-- end .container -->
 
     <script>
         const API_URL = window.location.origin;
@@ -407,7 +636,483 @@
             loadCNCData();
             loadEPRData();
             updateSyncStatus();
+            checkMedStatus();
         };
+
+        // ─── Tab switching ────────────────────────────────────────────────────────
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // ─── Medication helpers ───────────────────────────────────────────────────
+        function showDiv(id, html) {
+            const el = document.getElementById(id);
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+        function errHtml(msg) {
+            return `<div class="err-msg">⚠️ ${msg}</div>`;
+        }
+        function severityBadge(sev) {
+            const map = { critical:'badge-critical', high:'badge-high', medium:'badge-medium',
+                          minor:'badge-safe', safe:'badge-safe', safe_label:'badge-safe-label' };
+            return `<span class="${map[sev] || 'badge-medium'}">${sev}</span>`;
+        }
+        function urgencyBadge(u) {
+            return `<span class="badge-${u}">${u}</span>`;
+        }
+
+        // ─── Status check ─────────────────────────────────────────────────────────
+        async function checkMedStatus() {
+            document.getElementById('medStatus').innerHTML = '<span class="loading">Checking...</span>';
+            try {
+                const r = await fetch(`${API_URL}/api/medication/status`);
+                const d = await r.json();
+                const erpOk = d.erpnext?.connected;
+                const aiOk  = d.ai?.configured;
+                document.getElementById('medStatus').innerHTML = `
+                    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:8px;">
+                        <div><strong>ERPNext:</strong> ${erpOk
+                            ? '<span style="color:#28a745">✅ Connected</span>'
+                            : `<span style="color:#dc3545">❌ ${d.erpnext?.error || 'Not connected'}</span>`}</div>
+                        <div><strong>AI (OpenAI):</strong> ${aiOk
+                            ? '<span style="color:#28a745">✅ Ready</span>'
+                            : '<span style="color:#fd7e14">⚠️ Not configured (set OPENAI_API_KEY)</span>'}</div>
+                    </div>`;
+                if (erpOk) loadMedStats();
+                document.getElementById('medStats').style.display = erpOk ? 'grid' : 'none';
+            } catch(e) {
+                document.getElementById('medStatus').innerHTML = errHtml(e.message);
+            }
+        }
+
+        async function loadMedStats() {
+            try {
+                const [itemsRes, expiryRes] = await Promise.all([
+                    fetch(`${API_URL}/api/medication/items?limit=1000`),
+                    fetch(`${API_URL}/api/medication/expiry?days=90`)
+                ]);
+                const items  = await itemsRes.json();
+                const expiry = await expiryRes.json();
+                document.getElementById('statItems').textContent  = items.count ?? '—';
+                document.getElementById('statExpiry').textContent = expiry.batchesChecked ?? 0;
+                if (expiry.data) {
+                    document.getElementById('statReorder').textContent = expiry.data.totalAtRisk ?? '—';
+                }
+            } catch {}
+        }
+
+        // ─── Items ────────────────────────────────────────────────────────────────
+        async function loadMedItems() {
+            showDiv('medItemsResult', '<span class="loading">Loading medication items...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/items?limit=200`);
+                const d = await r.json();
+                if (!d.success) return showDiv('medItemsResult', errHtml(d.error));
+                if (!d.data.length) return showDiv('medItemsResult', '<p>No medication items found.</p>');
+                const html = d.data.map(i => `
+                    <div class="data-item">
+                        <strong>${i.item_name}</strong> <small style="color:#888">${i.name}</small>
+                        ${i.drug_form ? `<span class="badge-plan">${i.drug_form}</span>` : ''}
+                        ${i.controlled_substance ? '<span class="badge-critical">Controlled</span>' : ''}
+                        <br><small>${i.item_group} | UOM: ${i.stock_uom}
+                        ${i.reorder_level ? ` | Reorder: ${i.reorder_level}` : ''}</small>
+                    </div>`).join('');
+                showDiv('medItemsResult', `<p style="margin-bottom:8px;color:#666;">Showing ${d.count} items</p>${html}`);
+            } catch(e) { showDiv('medItemsResult', errHtml(e.message)); }
+        }
+
+        // ─── Stock Balance ────────────────────────────────────────────────────────
+        async function loadStockBalance() {
+            showDiv('medItemsResult', '<span class="loading">Loading stock balance...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/stock`);
+                const d = await r.json();
+                if (!d.success) return showDiv('medItemsResult', errHtml(d.error));
+                if (!d.data.length) return showDiv('medItemsResult', '<p>No stock records found.</p>');
+                const html = d.data.map(s => `
+                    <div class="data-item">
+                        <strong>${s.item_name}</strong> — ${s.warehouse}<br>
+                        <small>Qty: <strong>${s.qty}</strong> | Value: ${s.stock_value?.toFixed(2) ?? '—'}</small>
+                    </div>`).join('');
+                showDiv('medItemsResult', `<p style="margin-bottom:8px;color:#666;">${d.count} stock records</p>${html}`);
+            } catch(e) { showDiv('medItemsResult', errHtml(e.message)); }
+        }
+
+        // ─── Stock AI Analysis ────────────────────────────────────────────────────
+        async function loadStockAnalysis() {
+            showDiv('medItemsResult', '<span class="loading">Running AI stock analysis... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/stock/analysis`);
+                const d = await r.json();
+                if (!d.success) return showDiv('medItemsResult', errHtml(d.error));
+                showDiv('medItemsResult', `
+                    <div class="ai-analysis">
+                        <strong>AI Stock Analysis</strong><br>
+                        <small>${d.itemCount} items · ${d.stockRecords} stock records</small>
+                        <pre style="white-space:pre-wrap;margin-top:8px;font-size:13px;">${d.analysis}</pre>
+                    </div>`);
+            } catch(e) { showDiv('medItemsResult', errHtml(e.message)); }
+        }
+
+        // ─── Expiry Risk ──────────────────────────────────────────────────────────
+        async function loadExpiryRisk() {
+            const days = document.getElementById('expiryDays').value || 90;
+            showDiv('expiryResult', `<span class="loading">Checking batches expiring within ${days} days...</span>`);
+            try {
+                const r = await fetch(`${API_URL}/api/medication/expiry?days=${days}`);
+                const d = await r.json();
+                if (!d.success) return showDiv('expiryResult', errHtml(d.error));
+                if (!d.data) return showDiv('expiryResult', `<p>${d.message}</p>`);
+                const { items, summary, totalAtRisk } = d.data;
+                const rows = (items || []).map(i => `
+                    <div class="data-item alert-${i.riskLevel}">
+                        <strong>${i.item_name}</strong> ${severityBadge(i.riskLevel)}
+                        <br>Batch: ${i.batch_id} | Qty: ${i.qty} | Expires: ${i.expiry_date} (${i.daysToExpiry}d)
+                        <br><small style="color:#555">${i.action}</small>
+                    </div>`).join('');
+                showDiv('expiryResult', `
+                    <div class="ai-analysis" style="margin-bottom:10px;">
+                        <strong>Summary:</strong> ${totalAtRisk} at-risk batches<br>
+                        <small>${summary}</small>
+                    </div>${rows}`);
+            } catch(e) { showDiv('expiryResult', errHtml(e.message)); }
+        }
+
+        // ─── Reorder Forecast ─────────────────────────────────────────────────────
+        async function loadReorderForecast() {
+            showDiv('reorderResult', '<span class="loading">Generating reorder forecast... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/reorder`);
+                const d = await r.json();
+                if (!d.success) return showDiv('reorderResult', errHtml(d.error));
+                const { recommendations, totalItemsToReorder, summary } = d.data;
+                const rows = (recommendations || []).map(rec => `
+                    <div class="data-item">
+                        <strong>${rec.item_name}</strong> ${urgencyBadge(rec.urgency)}
+                        <br>Current: ${rec.current_qty} | Reorder Level: ${rec.reorder_level} | Order: <strong>${rec.recommended_order_qty}</strong>
+                        <br><small style="color:#555">${rec.reasoning}</small>
+                    </div>`).join('');
+                showDiv('reorderResult', `
+                    <div class="ai-analysis" style="margin-bottom:10px;">
+                        <strong>${totalItemsToReorder} items need reordering</strong><br>
+                        <small>${summary}</small>
+                    </div>${rows || '<p>No reorder needed.</p>'}`);
+            } catch(e) { showDiv('reorderResult', errHtml(e.message)); }
+        }
+
+        // ─── Prescriptions ────────────────────────────────────────────────────────
+        async function loadPrescriptions() {
+            showDiv('rxList', '<span class="loading">Loading active prescriptions...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/prescriptions?limit=20`);
+                const d = await r.json();
+                if (!d.success) return showDiv('rxList', errHtml(d.error));
+                if (!d.data.length) return showDiv('rxList', '<p>No active prescriptions found.</p>');
+                const html = d.data.map(p => `
+                    <div class="data-item">
+                        <strong>${p.patient_name}</strong> — ${p.encounter_date}
+                        <br><small>ID: ${p.name} | ${p.medications?.length ?? 0} medications | Dr. ${p.practitioner}</small>
+                        <br>
+                        <button style="padding:4px 10px;font-size:12px;margin-top:4px;" onclick="document.getElementById('rxInteractionId').value='${p.name}'; document.getElementById('rxDosageId').value='${p.name}'">Use ID</button>
+                    </div>`).join('');
+                showDiv('rxList', html);
+            } catch(e) { showDiv('rxList', errHtml(e.message)); }
+        }
+
+        // ─── Drug Interactions ────────────────────────────────────────────────────
+        async function checkInteractions() {
+            const id = document.getElementById('rxInteractionId').value.trim();
+            if (!id) return alert('Enter a Prescription ID first');
+            showDiv('interactionResult', '<span class="loading">Checking drug interactions via AI...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/prescriptions/${encodeURIComponent(id)}/interactions`);
+                const d = await r.json();
+                if (!d.success) return showDiv('interactionResult', errHtml(d.error));
+                const { hasCriticalInteractions, interactions, safeSummary } = d.data;
+                const rows = (interactions || []).map(i => `
+                    <div class="data-item alert-${i.severity === 'critical' ? 'critical' : i.severity === 'moderate' ? 'high' : 'medium'}">
+                        ${severityBadge(i.severity)} <strong>${i.drug1}</strong> + <strong>${i.drug2}</strong>
+                        <br><small>${i.description}</small>
+                        <br><em style="font-size:12px;color:#555">${i.recommendation}</em>
+                    </div>`).join('');
+                showDiv('interactionResult', `
+                    <div class="ai-analysis ${hasCriticalInteractions ? 'alert-critical' : 'alert-safe'}" style="margin-bottom:10px;">
+                        ${hasCriticalInteractions ? '⚠️ Critical interactions found' : '✅ No critical interactions'}
+                        <br><small>${safeSummary}</small>
+                    </div>${rows || '<p>No interactions detected.</p>'}`);
+            } catch(e) { showDiv('interactionResult', errHtml(e.message)); }
+        }
+
+        // ─── Dosage Safety ────────────────────────────────────────────────────────
+        async function checkDosage() {
+            const id = document.getElementById('rxDosageId').value.trim();
+            if (!id) return alert('Enter a Prescription ID first');
+            showDiv('dosageResult', '<span class="loading">Analyzing dosage safety via AI...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/prescriptions/${encodeURIComponent(id)}/dosage`);
+                const d = await r.json();
+                if (!d.success) return showDiv('dosageResult', errHtml(d.error));
+                const rows = (d.data || []).map(item => `
+                    <div class="data-item alert-${item.assessment === 'alert' ? 'critical' : item.assessment === 'review_needed' ? 'medium' : 'safe'}">
+                        ${severityBadge(item.assessment)} <strong>${item.drug}</strong> — ${item.prescribed}
+                        <br><small>${item.reasoning}</small>
+                        <br><em style="font-size:12px;color:#555">${item.recommendation}</em>
+                    </div>`).join('');
+                const alerts = d.alertCount;
+                showDiv('dosageResult', `
+                    <div class="ai-analysis" style="margin-bottom:10px;">
+                        ${alerts > 0 ? `⚠️ <strong>${alerts} alert(s)</strong> found` : '✅ All dosages look safe'}
+                    </div>${rows}`);
+            } catch(e) { showDiv('dosageResult', errHtml(e.message)); }
+        }
+
+        // ─── Patient Insights ─────────────────────────────────────────────────────
+        async function loadPatientInsights() {
+            const id = document.getElementById('patientId').value.trim();
+            if (!id) return alert('Enter a Patient ID first');
+            showDiv('patientResult', '<span class="loading">Running full medication review... (may take 15-30s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/medication/patients/${encodeURIComponent(id)}/insights`);
+                const d = await r.json();
+                if (!d.success) return showDiv('patientResult', errHtml(d.error));
+                const { patientName, totalMedications, insights, alerts, recommendations } = d.data;
+                const alertRows = (alerts || []).map(a => `<li style="color:#dc3545">${a}</li>`).join('');
+                const recRows   = (recommendations || []).map(rec => `<li>${rec}</li>`).join('');
+                showDiv('patientResult', `
+                    <div class="ai-analysis">
+                        <strong>${patientName}</strong> — ${totalMedications} medications reviewed
+                        ${alertRows ? `<ul style="margin:8px 0 0 16px">${alertRows}</ul>` : ''}
+                    </div>
+                    <pre style="white-space:pre-wrap;font-size:13px;margin-top:10px;">${insights}</pre>
+                    ${recRows ? `<div class="section-title">Recommendations</div><ul style="margin-left:16px;font-size:13px;">${recRows}</ul>` : ''}`);
+            } catch(e) { showDiv('patientResult', errHtml(e.message)); }
+        }
+
+        // ─── AI History ───────────────────────────────────────────────────────────
+        async function loadHistory(type) {
+            showDiv('historyResult', '<span class="loading">Loading history...</span>');
+            const qs = type ? `type=${type}&` : '';
+            try {
+                const r = await fetch(`${API_URL}/api/medication/history?${qs}limit=20`);
+                const d = await r.json();
+                if (!d.success) return showDiv('historyResult', errHtml(d.error));
+                if (!d.data.length) return showDiv('historyResult', '<p>No history found.</p>');
+                const html = d.data.map(h => `
+                    <div class="data-item">
+                        <span class="badge-plan">${h.analysis_type}</span>
+                        <strong>${h.reference_name}</strong>
+                        ${h.alert_count > 0 ? `<span class="badge-critical">${h.alert_count} alerts</span>` : ''}
+                        <br><small>${new Date(h.created_at).toLocaleString()}</small>
+                    </div>`).join('');
+                showDiv('historyResult', html);
+            } catch(e) { showDiv('historyResult', errHtml(e.message)); }
+        }
+        // ─── Quotation helpers ────────────────────────────────────────────────────
+        function showQuot(id, html) {
+            const el = document.getElementById(id);
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+        function priorityBadge(p) {
+            const map = { urgent:'badge-critical', normal:'badge-plan', low:'badge-safe' };
+            return `<span class="${map[p] || 'badge-medium'}">${p}</span>`;
+        }
+
+        async function checkQuotStatus() {
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/status`);
+                const d = await r.json();
+                document.getElementById('quotStatusInfo').innerHTML = `
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;">
+                        <div><strong>ERPNext:</strong> ${d.erpnextConfigured
+                            ? '<span style="color:#28a745">✅ Connected</span>'
+                            : '<span style="color:#dc3545">❌ Not connected</span>'}</div>
+                        <div><strong>AI (OpenAI):</strong> ${d.aiConfigured
+                            ? '<span style="color:#28a745">✅ Ready</span>'
+                            : '<span style="color:#fd7e14">⚠️ Not configured (set OPENAI_API_KEY)</span>'}</div>
+                    </div>`;
+            } catch(e) {
+                document.getElementById('quotStatusInfo').innerHTML = errHtml(e.message);
+            }
+        }
+
+        async function loadQuotOpen() {
+            showQuot('quotPipelineResult', '<span class="loading">Loading open quotations...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/open`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotPipelineResult', errHtml(d.error));
+                if (!d.data.length) return showQuot('quotPipelineResult', '<p>No open quotations found.</p>');
+                const html = d.data.map(q => `
+                    <div class="data-item">
+                        <strong>${q.name}</strong> — ${q.customer_name || q.party_name}
+                        <span class="badge-plan">${q.status}</span>
+                        <br><small>Total: ${q.currency} ${(q.grand_total||0).toLocaleString()} | Valid: ${q.valid_till || '—'}</small>
+                        <br>
+                        <button style="padding:3px 8px;font-size:12px;margin-top:4px;" onclick="document.getElementById('quotId').value='${q.name}'">Use ID</button>
+                    </div>`).join('');
+                showQuot('quotPipelineResult', `<p style="margin-bottom:8px;color:#666;">${d.count} open quotations</p>${html}`);
+            } catch(e) { showQuot('quotPipelineResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotPipeline() {
+            showQuot('quotPipelineResult', '<span class="loading">Running AI pipeline analysis... (may take 15-30s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/pipeline`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotPipelineResult', errHtml(d.error));
+                showQuot('quotPipelineResult', `
+                    <div class="ai-analysis">
+                        <strong>Pipeline Analysis</strong> <small>(${d.count} quotes)</small>
+                        <pre style="white-space:pre-wrap;margin-top:8px;font-size:13px;">${d.analysis}</pre>
+                    </div>`);
+            } catch(e) { showQuot('quotPipelineResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotAnalyze() {
+            const id = document.getElementById('quotId').value.trim();
+            if (!id) return alert('Enter a Quotation ID first');
+            showQuot('quotAnalyzeResult', '<span class="loading">AI analysing quotation... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/${encodeURIComponent(id)}/analyze`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotAnalyzeResult', errHtml(d.error));
+                const { winProbability, riskFactors, strengths, negotiationTips, recommendedActions, suggestedTerms, summary } = d.data;
+                const actionRows = (recommendedActions||[]).map(a =>
+                    `<li>${priorityBadge(a.priority)} ${a.action} <small style="color:#888">— ${a.deadline}</small></li>`
+                ).join('');
+                showQuot('quotAnalyzeResult', `
+                    <div class="ai-analysis">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;">
+                            <div style="font-size:2em;font-weight:700;color:${winProbability>=60?'#28a745':winProbability>=40?'#ffc107':'#dc3545'}">${winProbability}%</div>
+                            <div><strong>Win Probability</strong><br><small>${summary}</small></div>
+                        </div>
+                        ${riskFactors?.length ? `<div class="section-title">Risk Factors</div><ul style="margin:0 0 8px 16px;font-size:13px;">${riskFactors.map(r=>`<li style="color:#dc3545">${r}</li>`).join('')}</ul>` : ''}
+                        ${strengths?.length ? `<div class="section-title">Strengths</div><ul style="margin:0 0 8px 16px;font-size:13px;">${strengths.map(s=>`<li style="color:#28a745">${s}</li>`).join('')}</ul>` : ''}
+                        ${negotiationTips?.length ? `<div class="section-title">Negotiation Tips</div><ul style="margin:0 0 8px 16px;font-size:13px;">${negotiationTips.map(t=>`<li>${t}</li>`).join('')}</ul>` : ''}
+                        ${actionRows ? `<div class="section-title">Recommended Actions</div><ul style="margin:0 0 8px 16px;font-size:13px;">${actionRows}</ul>` : ''}
+                        ${suggestedTerms ? `<div class="section-title">Suggested Terms</div><p style="font-size:13px;">${suggestedTerms}</p>` : ''}
+                    </div>`);
+            } catch(e) { showQuot('quotAnalyzeResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotPricing() {
+            const id = document.getElementById('quotId').value.trim();
+            if (!id) return alert('Enter a Quotation ID first');
+            const margin = document.getElementById('quotMargin').value || 25;
+            showQuot('quotAnalyzeResult', '<span class="loading">Getting AI pricing suggestions...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/${encodeURIComponent(id)}/pricing?margin=${margin}`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotAnalyzeResult', errHtml(d.error));
+                const rows = (d.data||[]).map(item => `
+                    <div class="data-item">
+                        <strong>${item.itemName}</strong> <small style="color:#888">${item.itemCode}</small>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:13px;">
+                            <span>Suggested Rate: <strong style="color:#28a745">${(item.suggestedRate||0).toLocaleString()}</strong></span>
+                            <span>Margin: <strong>${item.suggestedMargin}%</strong></span>
+                            <span>BOM Cost: ${(item.bomCost||0).toLocaleString()}</span>
+                            <span>List Rate: ${(item.priceListRate||0).toLocaleString()}</span>
+                            <span>Confidence: ${Math.round((item.confidenceScore||0)*100)}%</span>
+                        </div>
+                        <small style="color:#555;margin-top:4px;display:block">${item.reasoning}</small>
+                    </div>`).join('');
+                showQuot('quotAnalyzeResult', `<p style="margin-bottom:8px;color:#666;font-weight:600;">Pricing Suggestions (target margin ${margin}%)</p>${rows}`);
+            } catch(e) { showQuot('quotAnalyzeResult', errHtml(e.message)); }
+        }
+
+        async function draftQuotation() {
+            const customer = document.getElementById('quotCustomer').value.trim();
+            const req = document.getElementById('quotRequirements').value.trim();
+            if (!customer || !req) return alert('Enter customer name and requirements');
+            showQuot('quotDraftResult', '<span class="loading">AI drafting quotation... (may take 15-30s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customer_name: customer, requirements: req })
+                });
+                const d = await r.json();
+                if (!d.success) return showQuot('quotDraftResult', errHtml(d.error));
+                const { items, suggestedTerms, coverNote, totalEstimate, validityDays } = d.data;
+                const rows = (items||[]).map(it => `
+                    <div class="data-item">
+                        <strong>${it.item_name}</strong> <small style="color:#888">${it.item_code}</small>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;font-size:13px;">
+                            <span>Qty: <strong>${it.qty}</strong></span>
+                            <span>Rate: <strong style="color:#667eea">${(it.suggested_rate||0).toLocaleString()}</strong></span>
+                            <span>Lead: ${it.lead_time_days}d</span>
+                            <span>Amount: <strong>${((it.qty||1)*(it.suggested_rate||0)).toLocaleString()}</strong></span>
+                        </div>
+                        ${it.notes ? `<small style="color:#555">${it.notes}</small>` : ''}
+                    </div>`).join('');
+                showQuot('quotDraftResult', `
+                    <div class="ai-analysis">
+                        <p style="font-style:italic;margin-bottom:12px;">${coverNote}</p>
+                        ${rows}
+                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">
+                            <strong>Total Estimate: ${(totalEstimate||0).toLocaleString()}</strong>
+                            &nbsp;|&nbsp; Validity: ${validityDays} days
+                            &nbsp;|&nbsp; Terms: ${suggestedTerms}
+                        </div>
+                    </div>`);
+            } catch(e) { showQuot('quotDraftResult', errHtml(e.message)); }
+        }
+
+        function addLeadTimeRow() {
+            const cont = document.getElementById('quotLeadItems');
+            const row = document.createElement('div');
+            row.className = 'quot-item-row';
+            row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+            row.innerHTML = `
+                <input type="text" placeholder="Item Code" class="lt-code" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                <input type="text" placeholder="Item Name" class="lt-name" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                <input type="number" placeholder="Qty" class="lt-qty" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;" value="1">
+                <button onclick="this.parentElement.remove()" style="background:#dc3545;padding:4px 10px;font-size:12px;">✕</button>`;
+            cont.appendChild(row);
+        }
+
+        async function estimateLeadTime() {
+            const rows = document.querySelectorAll('#quotLeadItems .quot-item-row');
+            const items = [];
+            rows.forEach(row => {
+                const code = row.querySelector('.lt-code').value.trim();
+                const name = row.querySelector('.lt-name').value.trim();
+                const qty  = parseInt(row.querySelector('.lt-qty').value) || 1;
+                if (code || name) items.push({ item_code: code || name, item_name: name || code, qty });
+            });
+            if (!items.length) return alert('Add at least one item');
+            showQuot('quotLeadResult', '<span class="loading">Estimating lead times... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/lead-time`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const d = await r.json();
+                if (!d.success) return showQuot('quotLeadResult', errHtml(d.error));
+                const confColor = { high:'#28a745', medium:'#ffc107', low:'#dc3545' };
+                const rows2 = (d.data||[]).map(lt => `
+                    <div class="data-item">
+                        <strong>${lt.itemCode}</strong> — Qty: ${lt.requestedQty}
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;font-size:13px;">
+                            <span>Lead Time: <strong style="color:#667eea">${lt.estimatedDays} days</strong></span>
+                            <span style="color:${confColor[lt.confidence]||'#888'}">Confidence: ${lt.confidence}</span>
+                            ${lt.bottleneck ? `<span style="color:#dc3545">Bottleneck: ${lt.bottleneck}</span>` : ''}
+                        </div>
+                        <small style="color:#555">${lt.reasoning}</small>
+                    </div>`).join('');
+                const note = d.openWorkOrders !== undefined ? `<p style="margin-bottom:8px;color:#666;">Open work orders in system: <strong>${d.openWorkOrders}</strong></p>` : '';
+                showQuot('quotLeadResult', note + rows2);
+            } catch(e) { showQuot('quotLeadResult', errHtml(e.message)); }
+        }
+
+        // Init quotation status when tab is clicked
+        document.querySelector('[onclick*="quot-tab"]').addEventListener('click', checkQuotStatus);
     </script>
 </body>
 </html>
