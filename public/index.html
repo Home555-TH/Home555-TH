@@ -185,6 +185,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('cnc-tab', this)">📊 CNC / EPR</button>
             <button class="tab-btn" onclick="switchTab('med-tab', this)">💊 Medication</button>
+            <button class="tab-btn" onclick="switchTab('quot-tab', this)">📋 AI Quotation</button>
         </div>
 
         <!-- ══════════ CNC / EPR TAB ══════════ -->
@@ -410,6 +411,71 @@
 
             </div><!-- end med-grid -->
         </div><!-- end #med-tab -->
+
+        <!-- ══════════ AI QUOTATION TAB ══════════ -->
+        <div id="quot-tab" class="tab-panel">
+
+        <!-- Status -->
+        <div class="sync-status" id="quotStatus">
+            <h3>AI Quotation Service</h3>
+            <div id="quotStatusInfo"><span class="loading">Checking...</span></div>
+        </div>
+
+        <!-- Pipeline -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Pipeline Overview</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <button onclick="loadQuotOpen()">Load Open Quotes</button>
+                <button onclick="loadQuotPipeline()" style="background:#764ba2;">AI Pipeline Analysis</button>
+            </div>
+            <div id="quotPipelineResult"></div>
+        </div>
+
+        <!-- Single Quote -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Analyse Quote</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+                <input id="quotId" type="text" placeholder="Quotation ID (e.g. SAL-QTN-2024-00001)"
+                    style="flex:1;min-width:220px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                <input id="quotMargin" type="number" placeholder="Margin % (default 25)"
+                    style="width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;" value="25">
+                <button onclick="loadQuotAnalyze()">AI Analyse</button>
+                <button onclick="loadQuotPricing()" style="background:#28a745;">Pricing Suggestions</button>
+            </div>
+            <div id="quotAnalyzeResult"></div>
+        </div>
+
+        <!-- Draft Quotation -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Draft New Quotation (AI)</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+                <input id="quotCustomer" type="text" placeholder="Customer Name"
+                    style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                <textarea id="quotRequirements" rows="3" placeholder="Describe the customer requirements (e.g. 50 pcs CNC turned parts, stainless steel, OD 20mm, tolerance ±0.01)"
+                    style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+                <button onclick="draftQuotation()" style="align-self:flex-start;">Generate Draft</button>
+            </div>
+            <div id="quotDraftResult"></div>
+        </div>
+
+        <!-- Lead Time -->
+        <div style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom:12px;">Lead Time Estimator</h3>
+            <div id="quotLeadItems" style="margin-bottom:10px;">
+                <div class="quot-item-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                    <input type="text" placeholder="Item Code" class="lt-code" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                    <input type="text" placeholder="Item Name" class="lt-name" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                    <input type="number" placeholder="Qty" class="lt-qty" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;" value="1">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button onclick="addLeadTimeRow()" style="background:#6c757d;">+ Add Item</button>
+                <button onclick="estimateLeadTime()">Estimate Lead Time</button>
+            </div>
+            <div id="quotLeadResult" style="margin-top:12px;"></div>
+        </div>
+
+        </div><!-- end #quot-tab -->
 
     </div><!-- end .container -->
 
@@ -845,6 +911,208 @@
                 showDiv('historyResult', html);
             } catch(e) { showDiv('historyResult', errHtml(e.message)); }
         }
+        // ─── Quotation helpers ────────────────────────────────────────────────────
+        function showQuot(id, html) {
+            const el = document.getElementById(id);
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+        function priorityBadge(p) {
+            const map = { urgent:'badge-critical', normal:'badge-plan', low:'badge-safe' };
+            return `<span class="${map[p] || 'badge-medium'}">${p}</span>`;
+        }
+
+        async function checkQuotStatus() {
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/status`);
+                const d = await r.json();
+                document.getElementById('quotStatusInfo').innerHTML = `
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;">
+                        <div><strong>ERPNext:</strong> ${d.erpnextConfigured
+                            ? '<span style="color:#28a745">✅ Connected</span>'
+                            : '<span style="color:#dc3545">❌ Not connected</span>'}</div>
+                        <div><strong>AI (OpenAI):</strong> ${d.aiConfigured
+                            ? '<span style="color:#28a745">✅ Ready</span>'
+                            : '<span style="color:#fd7e14">⚠️ Not configured (set OPENAI_API_KEY)</span>'}</div>
+                    </div>`;
+            } catch(e) {
+                document.getElementById('quotStatusInfo').innerHTML = errHtml(e.message);
+            }
+        }
+
+        async function loadQuotOpen() {
+            showQuot('quotPipelineResult', '<span class="loading">Loading open quotations...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/open`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotPipelineResult', errHtml(d.error));
+                if (!d.data.length) return showQuot('quotPipelineResult', '<p>No open quotations found.</p>');
+                const html = d.data.map(q => `
+                    <div class="data-item">
+                        <strong>${q.name}</strong> — ${q.customer_name || q.party_name}
+                        <span class="badge-plan">${q.status}</span>
+                        <br><small>Total: ${q.currency} ${(q.grand_total||0).toLocaleString()} | Valid: ${q.valid_till || '—'}</small>
+                        <br>
+                        <button style="padding:3px 8px;font-size:12px;margin-top:4px;" onclick="document.getElementById('quotId').value='${q.name}'">Use ID</button>
+                    </div>`).join('');
+                showQuot('quotPipelineResult', `<p style="margin-bottom:8px;color:#666;">${d.count} open quotations</p>${html}`);
+            } catch(e) { showQuot('quotPipelineResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotPipeline() {
+            showQuot('quotPipelineResult', '<span class="loading">Running AI pipeline analysis... (may take 15-30s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/pipeline`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotPipelineResult', errHtml(d.error));
+                showQuot('quotPipelineResult', `
+                    <div class="ai-analysis">
+                        <strong>Pipeline Analysis</strong> <small>(${d.count} quotes)</small>
+                        <pre style="white-space:pre-wrap;margin-top:8px;font-size:13px;">${d.analysis}</pre>
+                    </div>`);
+            } catch(e) { showQuot('quotPipelineResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotAnalyze() {
+            const id = document.getElementById('quotId').value.trim();
+            if (!id) return alert('Enter a Quotation ID first');
+            showQuot('quotAnalyzeResult', '<span class="loading">AI analysing quotation... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/${encodeURIComponent(id)}/analyze`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotAnalyzeResult', errHtml(d.error));
+                const { winProbability, riskFactors, strengths, negotiationTips, recommendedActions, suggestedTerms, summary } = d.data;
+                const actionRows = (recommendedActions||[]).map(a =>
+                    `<li>${priorityBadge(a.priority)} ${a.action} <small style="color:#888">— ${a.deadline}</small></li>`
+                ).join('');
+                showQuot('quotAnalyzeResult', `
+                    <div class="ai-analysis">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;">
+                            <div style="font-size:2em;font-weight:700;color:${winProbability>=60?'#28a745':winProbability>=40?'#ffc107':'#dc3545'}">${winProbability}%</div>
+                            <div><strong>Win Probability</strong><br><small>${summary}</small></div>
+                        </div>
+                        ${riskFactors?.length ? `<div class="section-title">Risk Factors</div><ul style="margin:0 0 8px 16px;font-size:13px;">${riskFactors.map(r=>`<li style="color:#dc3545">${r}</li>`).join('')}</ul>` : ''}
+                        ${strengths?.length ? `<div class="section-title">Strengths</div><ul style="margin:0 0 8px 16px;font-size:13px;">${strengths.map(s=>`<li style="color:#28a745">${s}</li>`).join('')}</ul>` : ''}
+                        ${negotiationTips?.length ? `<div class="section-title">Negotiation Tips</div><ul style="margin:0 0 8px 16px;font-size:13px;">${negotiationTips.map(t=>`<li>${t}</li>`).join('')}</ul>` : ''}
+                        ${actionRows ? `<div class="section-title">Recommended Actions</div><ul style="margin:0 0 8px 16px;font-size:13px;">${actionRows}</ul>` : ''}
+                        ${suggestedTerms ? `<div class="section-title">Suggested Terms</div><p style="font-size:13px;">${suggestedTerms}</p>` : ''}
+                    </div>`);
+            } catch(e) { showQuot('quotAnalyzeResult', errHtml(e.message)); }
+        }
+
+        async function loadQuotPricing() {
+            const id = document.getElementById('quotId').value.trim();
+            if (!id) return alert('Enter a Quotation ID first');
+            const margin = document.getElementById('quotMargin').value || 25;
+            showQuot('quotAnalyzeResult', '<span class="loading">Getting AI pricing suggestions...</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/${encodeURIComponent(id)}/pricing?margin=${margin}`);
+                const d = await r.json();
+                if (!d.success) return showQuot('quotAnalyzeResult', errHtml(d.error));
+                const rows = (d.data||[]).map(item => `
+                    <div class="data-item">
+                        <strong>${item.itemName}</strong> <small style="color:#888">${item.itemCode}</small>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:13px;">
+                            <span>Suggested Rate: <strong style="color:#28a745">${(item.suggestedRate||0).toLocaleString()}</strong></span>
+                            <span>Margin: <strong>${item.suggestedMargin}%</strong></span>
+                            <span>BOM Cost: ${(item.bomCost||0).toLocaleString()}</span>
+                            <span>List Rate: ${(item.priceListRate||0).toLocaleString()}</span>
+                            <span>Confidence: ${Math.round((item.confidenceScore||0)*100)}%</span>
+                        </div>
+                        <small style="color:#555;margin-top:4px;display:block">${item.reasoning}</small>
+                    </div>`).join('');
+                showQuot('quotAnalyzeResult', `<p style="margin-bottom:8px;color:#666;font-weight:600;">Pricing Suggestions (target margin ${margin}%)</p>${rows}`);
+            } catch(e) { showQuot('quotAnalyzeResult', errHtml(e.message)); }
+        }
+
+        async function draftQuotation() {
+            const customer = document.getElementById('quotCustomer').value.trim();
+            const req = document.getElementById('quotRequirements').value.trim();
+            if (!customer || !req) return alert('Enter customer name and requirements');
+            showQuot('quotDraftResult', '<span class="loading">AI drafting quotation... (may take 15-30s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customer_name: customer, requirements: req })
+                });
+                const d = await r.json();
+                if (!d.success) return showQuot('quotDraftResult', errHtml(d.error));
+                const { items, suggestedTerms, coverNote, totalEstimate, validityDays } = d.data;
+                const rows = (items||[]).map(it => `
+                    <div class="data-item">
+                        <strong>${it.item_name}</strong> <small style="color:#888">${it.item_code}</small>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;font-size:13px;">
+                            <span>Qty: <strong>${it.qty}</strong></span>
+                            <span>Rate: <strong style="color:#667eea">${(it.suggested_rate||0).toLocaleString()}</strong></span>
+                            <span>Lead: ${it.lead_time_days}d</span>
+                            <span>Amount: <strong>${((it.qty||1)*(it.suggested_rate||0)).toLocaleString()}</strong></span>
+                        </div>
+                        ${it.notes ? `<small style="color:#555">${it.notes}</small>` : ''}
+                    </div>`).join('');
+                showQuot('quotDraftResult', `
+                    <div class="ai-analysis">
+                        <p style="font-style:italic;margin-bottom:12px;">${coverNote}</p>
+                        ${rows}
+                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">
+                            <strong>Total Estimate: ${(totalEstimate||0).toLocaleString()}</strong>
+                            &nbsp;|&nbsp; Validity: ${validityDays} days
+                            &nbsp;|&nbsp; Terms: ${suggestedTerms}
+                        </div>
+                    </div>`);
+            } catch(e) { showQuot('quotDraftResult', errHtml(e.message)); }
+        }
+
+        function addLeadTimeRow() {
+            const cont = document.getElementById('quotLeadItems');
+            const row = document.createElement('div');
+            row.className = 'quot-item-row';
+            row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+            row.innerHTML = `
+                <input type="text" placeholder="Item Code" class="lt-code" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                <input type="text" placeholder="Item Name" class="lt-name" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                <input type="number" placeholder="Qty" class="lt-qty" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;" value="1">
+                <button onclick="this.parentElement.remove()" style="background:#dc3545;padding:4px 10px;font-size:12px;">✕</button>`;
+            cont.appendChild(row);
+        }
+
+        async function estimateLeadTime() {
+            const rows = document.querySelectorAll('#quotLeadItems .quot-item-row');
+            const items = [];
+            rows.forEach(row => {
+                const code = row.querySelector('.lt-code').value.trim();
+                const name = row.querySelector('.lt-name').value.trim();
+                const qty  = parseInt(row.querySelector('.lt-qty').value) || 1;
+                if (code || name) items.push({ item_code: code || name, item_name: name || code, qty });
+            });
+            if (!items.length) return alert('Add at least one item');
+            showQuot('quotLeadResult', '<span class="loading">Estimating lead times... (may take 10-20s)</span>');
+            try {
+                const r = await fetch(`${API_URL}/api/quotation/lead-time`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const d = await r.json();
+                if (!d.success) return showQuot('quotLeadResult', errHtml(d.error));
+                const confColor = { high:'#28a745', medium:'#ffc107', low:'#dc3545' };
+                const rows2 = (d.data||[]).map(lt => `
+                    <div class="data-item">
+                        <strong>${lt.itemCode}</strong> — Qty: ${lt.requestedQty}
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;font-size:13px;">
+                            <span>Lead Time: <strong style="color:#667eea">${lt.estimatedDays} days</strong></span>
+                            <span style="color:${confColor[lt.confidence]||'#888'}">Confidence: ${lt.confidence}</span>
+                            ${lt.bottleneck ? `<span style="color:#dc3545">Bottleneck: ${lt.bottleneck}</span>` : ''}
+                        </div>
+                        <small style="color:#555">${lt.reasoning}</small>
+                    </div>`).join('');
+                const note = d.openWorkOrders !== undefined ? `<p style="margin-bottom:8px;color:#666;">Open work orders in system: <strong>${d.openWorkOrders}</strong></p>` : '';
+                showQuot('quotLeadResult', note + rows2);
+            } catch(e) { showQuot('quotLeadResult', errHtml(e.message)); }
+        }
+
+        // Init quotation status when tab is clicked
+        document.querySelector('[onclick*="quot-tab"]').addEventListener('click', checkQuotStatus);
     </script>
 </body>
 </html>
