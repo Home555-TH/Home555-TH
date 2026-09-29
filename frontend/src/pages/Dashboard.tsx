@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/client'
+import PhaseIndicator from '../components/PhaseIndicator'
 import { formatCurrency } from '../utils/format'
 
 export default function Dashboard() {
@@ -62,6 +63,9 @@ export default function Dashboard() {
           </a>
         </div>
       </div>
+
+      {/* Phase Indicator - Flow Intelligence */}
+      <PhaseIndicator />
     </div>
   )
 }

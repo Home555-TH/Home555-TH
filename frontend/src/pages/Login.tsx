@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../hooks/useAuth'
+import Logo from '../components/Logo'
 import toast from 'react-hot-toast'
 
 interface FormData {
@@ -31,7 +32,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-2">🏘️</div>
+          <div className="flex justify-center mb-4">
+            <Logo size="md" showText={false} />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">Wilairat ERP</h1>
           <p className="text-gray-500 text-sm mt-1">นิติบุคคลหมู่บ้านจัดสรร บ้านวิไลรัตน์</p>
         </div>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import Logo from './Logo'
+import Breadcrumb from './Breadcrumb'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -36,11 +38,16 @@ export default function Layout({ children }: LayoutProps) {
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
       <aside className={clsx('flex flex-col bg-blue-900 text-white transition-all duration-200', collapsed ? 'w-16' : 'w-64')}>
-        <div className="flex items-center justify-between p-4 border-b border-blue-800">
+        <div className="flex items-center justify-between p-3 border-b border-blue-800">
           {!collapsed && (
-            <div>
-              <div className="font-bold text-sm leading-tight">Wilairat ERP</div>
-              <div className="text-blue-300 text-xs">บ้านวิไลรัตน์</div>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10">
+                <Logo size="sm" showText={false} />
+              </div>
+              <div>
+                <div className="font-bold text-sm leading-tight">Wilairat</div>
+                <div className="text-blue-300 text-xs">ERP</div>
+              </div>
             </div>
           )}
           <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-blue-800 transition-colors ml-auto">
@@ -82,6 +89,7 @@ export default function Layout({ children }: LayoutProps) {
           <h1 className="text-lg font-semibold text-gray-800">บ้านวิไลรัตน์ - ระบบบริหารจัดการ</h1>
         </header>
         <div className="flex-1 overflow-y-auto p-6">
+          <Breadcrumb />
           {children}
         </div>
       </main>
