@@ -16,6 +16,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'แดชบอร์ด', roles: ['admin', 'ap_import', 'accountant', 'super_admin'], icon: '📊' },
   { to: '/members', label: 'สมาชิก', roles: ['admin', 'accountant', 'super_admin'], icon: '👥' },
   { to: '/pv', label: 'ใบสำคัญจ่าย', roles: ['accountant', 'admin', 'super_admin'], icon: '📄' },
+  { to: '/ar', label: 'ใบแจ้งหนี้', roles: ['accountant', 'admin', 'super_admin'], icon: '📋' },
+  { to: '/ar/aging', label: 'ลูกหนี้ค้าง', roles: ['accountant', 'admin', 'super_admin'], icon: '📈' },
   { to: '/settings', label: 'ตั้งค่า', roles: ['admin', 'super_admin'], icon: '⚙️' },
 ]
 

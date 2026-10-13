@@ -9,6 +9,9 @@ import Settings from './pages/Settings'
 import PVList from './pages/pv/PVList'
 import PVCreate from './pages/pv/PVCreate'
 import PVDetail from './pages/pv/PVDetail'
+import ARAging from './pages/ar/ARAging'
+import ARInvoiceList from './pages/ar/ARInvoiceList'
+import ARCreate from './pages/ar/ARCreate'
 
 function RequireAuth({ children, roles }: { children: JSX.Element; roles?: string[] }) {
   const { user, loading } = useAuth()
@@ -88,6 +91,39 @@ function AppRoutes() {
           <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
             <Layout>
               <PVDetail />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/ar"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <ARInvoiceList />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/ar/create"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <ARCreate />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/ar/aging"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <ARAging />
             </Layout>
           </RequireAuth>
         }
