@@ -12,6 +12,8 @@ import PVDetail from './pages/pv/PVDetail'
 import ARAging from './pages/ar/ARAging'
 import ARInvoiceList from './pages/ar/ARInvoiceList'
 import ARCreate from './pages/ar/ARCreate'
+import BankReconciliation from './pages/bank/BankReconciliation'
+import BankCashFlow from './pages/bank/BankCashFlow'
 
 function RequireAuth({ children, roles }: { children: JSX.Element; roles?: string[] }) {
   const { user, loading } = useAuth()
@@ -124,6 +126,28 @@ function AppRoutes() {
           <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
             <Layout>
               <ARAging />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/bank/reconciliation"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <BankReconciliation />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/bank/cash-flow"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <BankCashFlow />
             </Layout>
           </RequireAuth>
         }

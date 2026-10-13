@@ -18,6 +18,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/pv', label: 'ใบสำคัญจ่าย', roles: ['accountant', 'admin', 'super_admin'], icon: '📄' },
   { to: '/ar', label: 'ใบแจ้งหนี้', roles: ['accountant', 'admin', 'super_admin'], icon: '📋' },
   { to: '/ar/aging', label: 'ลูกหนี้ค้าง', roles: ['accountant', 'admin', 'super_admin'], icon: '📈' },
+  { to: '/bank/reconciliation', label: 'ยืนยันธนาคาร', roles: ['accountant', 'admin', 'super_admin'], icon: '🏦' },
+  { to: '/bank/cash-flow', label: 'กระแสเงินสด', roles: ['accountant', 'admin', 'super_admin'], icon: '💰' },
   { to: '/settings', label: 'ตั้งค่า', roles: ['admin', 'super_admin'], icon: '⚙️' },
 ]
 
