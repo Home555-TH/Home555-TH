@@ -15,6 +15,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'แดชบอร์ด', roles: ['admin', 'ap_import', 'accountant', 'super_admin'], icon: '📊' },
   { to: '/members', label: 'สมาชิก', roles: ['admin', 'accountant', 'super_admin'], icon: '👥' },
+  { to: '/pv', label: 'ใบสำคัญจ่าย', roles: ['accountant', 'admin', 'super_admin'], icon: '📄' },
   { to: '/settings', label: 'ตั้งค่า', roles: ['admin', 'super_admin'], icon: '⚙️' },
 ]
 

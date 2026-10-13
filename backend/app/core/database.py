@@ -25,3 +25,11 @@ def get_db():
 def init_db():
     """Initialize database tables"""
     Base.metadata.create_all(bind=engine)
+
+    # Seed default data
+    from app.seeds.seed_coa import seed_chart_of_accounts
+    db = SessionLocal()
+    try:
+        seed_chart_of_accounts(db)
+    finally:
+        db.close()

@@ -6,6 +6,9 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Members from './pages/Members'
 import Settings from './pages/Settings'
+import PVList from './pages/pv/PVList'
+import PVCreate from './pages/pv/PVCreate'
+import PVDetail from './pages/pv/PVDetail'
 
 function RequireAuth({ children, roles }: { children: JSX.Element; roles?: string[] }) {
   const { user, loading } = useAuth()
@@ -52,6 +55,39 @@ function AppRoutes() {
           <RequireAuth roles={['admin', 'super_admin']}>
             <Layout>
               <Settings />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pv"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <PVList />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pv/create"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <PVCreate />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pv/:id"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <PVDetail />
             </Layout>
           </RequireAuth>
         }
