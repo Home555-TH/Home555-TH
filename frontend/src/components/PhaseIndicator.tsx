@@ -17,8 +17,8 @@ const PHASES: Phase[] = [
   {
     number: 2,
     name: 'Accounting',
-    status: 'current',
-    features: ['Payment Vouchers', 'Receivables', 'Bank']
+    status: 'completed',
+    features: ['Payment Vouchers', 'Receivables', 'Bank', 'Reports']
   },
   {
     number: 3,

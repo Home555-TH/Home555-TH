@@ -20,6 +20,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/ar/aging', label: 'ลูกหนี้ค้าง', roles: ['accountant', 'admin', 'super_admin'], icon: '📈' },
   { to: '/bank/reconciliation', label: 'ยืนยันธนาคาร', roles: ['accountant', 'admin', 'super_admin'], icon: '🏦' },
   { to: '/bank/cash-flow', label: 'กระแสเงินสด', roles: ['accountant', 'admin', 'super_admin'], icon: '💰' },
+  { to: '/reports/income-statement', label: 'งบกำไรขาดทุน', roles: ['accountant', 'admin', 'super_admin'], icon: '📑' },
+  { to: '/reports/tax-summary', label: 'สรุปภาษี', roles: ['accountant', 'admin', 'super_admin'], icon: '💼' },
   { to: '/settings', label: 'ตั้งค่า', roles: ['admin', 'super_admin'], icon: '⚙️' },
 ]
 

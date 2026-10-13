@@ -14,6 +14,8 @@ import ARInvoiceList from './pages/ar/ARInvoiceList'
 import ARCreate from './pages/ar/ARCreate'
 import BankReconciliation from './pages/bank/BankReconciliation'
 import BankCashFlow from './pages/bank/BankCashFlow'
+import IncomeStatement from './pages/reports/IncomeStatement'
+import TaxSummary from './pages/reports/TaxSummary'
 
 function RequireAuth({ children, roles }: { children: JSX.Element; roles?: string[] }) {
   const { user, loading } = useAuth()
@@ -148,6 +150,28 @@ function AppRoutes() {
           <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
             <Layout>
               <BankCashFlow />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/reports/income-statement"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <IncomeStatement />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/reports/tax-summary"
+        element={
+          <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
+            <Layout>
+              <TaxSummary />
             </Layout>
           </RequireAuth>
         }
