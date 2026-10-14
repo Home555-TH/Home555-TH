@@ -21,16 +21,29 @@ const PHASES: Phase[] = [
     features: ['Payment Vouchers', 'Receivables', 'Bank', 'Reports']
   },
   {
+  {
     number: 3,
     name: 'Operations',
     status: 'planned',
     features: ['Utilities', 'Documents', 'Import']
   },
   {
+    number: 3,
+    name: 'CRM & HR',
+    status: 'current',
+    features: ['CRM', 'HR/Payroll', 'Attendance', 'Benefits']
+  },
+  {
     number: 4,
     name: 'Reports',
     status: 'planned',
     features: ['Analytics', 'Exports', 'Audit Logs']
+  },
+  {
+    number: 5,
+    name: 'Operations',
+    status: 'planned',
+    features: ['Utilities', 'Inventory', 'Documents', 'Import']
   }
 ]
 

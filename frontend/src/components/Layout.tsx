@@ -22,6 +22,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/bank/cash-flow', label: 'กระแสเงินสด', roles: ['accountant', 'admin', 'super_admin'], icon: '💰' },
   { to: '/reports/income-statement', label: 'งบกำไรขาดทุน', roles: ['accountant', 'admin', 'super_admin'], icon: '📑' },
   { to: '/reports/tax-summary', label: 'สรุปภาษี', roles: ['accountant', 'admin', 'super_admin'], icon: '💼' },
+  { to: '/hr/employees', label: 'พนักงาน', roles: ['admin', 'super_admin'], icon: '👨‍💼' },
+  { to: '/hr/payroll', label: 'เงินเดือน', roles: ['admin', 'accountant', 'super_admin'], icon: '💵' },
   { to: '/settings', label: 'ตั้งค่า', roles: ['admin', 'super_admin'], icon: '⚙️' },
 ]
 

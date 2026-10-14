@@ -16,6 +16,9 @@ import BankReconciliation from './pages/bank/BankReconciliation'
 import BankCashFlow from './pages/bank/BankCashFlow'
 import IncomeStatement from './pages/reports/IncomeStatement'
 import TaxSummary from './pages/reports/TaxSummary'
+import MemberProfile from './pages/crm/MemberProfile'
+import EmployeeList from './pages/hr/EmployeeList'
+import Payroll from './pages/hr/Payroll'
 
 function RequireAuth({ children, roles }: { children: JSX.Element; roles?: string[] }) {
   const { user, loading } = useAuth()
@@ -172,6 +175,39 @@ function AppRoutes() {
           <RequireAuth roles={['accountant', 'admin', 'super_admin']}>
             <Layout>
               <TaxSummary />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/member/:memberId/crm"
+        element={
+          <RequireAuth roles={['admin', 'accountant', 'super_admin']}>
+            <Layout>
+              <MemberProfile />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/hr/employees"
+        element={
+          <RequireAuth roles={['admin', 'super_admin']}>
+            <Layout>
+              <EmployeeList />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/hr/payroll"
+        element={
+          <RequireAuth roles={['admin', 'accountant', 'super_admin']}>
+            <Layout>
+              <Payroll />
             </Layout>
           </RequireAuth>
         }
